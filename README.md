@@ -22,3 +22,4 @@ Zodat je "Rock, Paper, Scissors, Lizard, Spock" kan spelen tegen de computer doo
 ## Bronnenlijst
 Hou hier een up-to-date lijst bij van alle door jou aangewende bronnen.
 - spelregels (https://bigbangtheory.fandom.com/wiki/Rock,_Paper,_Scissors,_Lizard,_Spock)
+- mediapipe (https://google.github.io/mediapipe/solutions/hands#python-solution-api)
