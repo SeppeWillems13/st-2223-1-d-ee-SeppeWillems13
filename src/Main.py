@@ -4,8 +4,8 @@ from Choices import Choices
 
 
 def play():
+    #Your choice will be replaced by hand gesture recognition
     user = input("What's your choice? '1' for rock, '2' for paper, '3' for scissors, '4' for lizard, '5' for spock\n")
-
     # validate user input and convert to Choices enum
     user = int(user)
     if not 1 <= user <= 5:
