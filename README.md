@@ -19,6 +19,9 @@ Zodat je "Rock, Paper, Scissors, Lizard, Spock" kan spelen tegen de computer doo
 - Spock vaporizes Rock
 - (and as it always has) Rock crushes Scissors
 
+## Roadplan
+ - https://seppe-willems.monday.com/boards/3306009487/
+
 ## Bronnenlijst
 Hou hier een up-to-date lijst bij van alle door jou aangewende bronnen.
 - spelregels (https://bigbangtheory.fandom.com/wiki/Rock,_Paper,_Scissors,_Lizard,_Spock)
