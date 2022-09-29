@@ -20,7 +20,7 @@ Zodat je "Rock, Paper, Scissors, Lizard, Spock" kan spelen tegen de computer doo
 - (and as it always has) Rock crushes Scissors
 
 ## Roadplan
- - [https://seppe-willems.monday.com/boards/3306009487/]
+ - https://infograph.venngage.com/ps/xIXpvrhIas0/innovative-project-roadmap
 
 ## Bronnenlijst
 Hou hier een up-to-date lijst bij van alle door jou aangewende bronnen.
