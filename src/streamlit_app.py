@@ -12,6 +12,8 @@ score = {'wins': 0, 'losses': 0, 'ties': 0}
 
 while True:
     # Get the player's name
+    #fix random bug
+    st.experimental_reset()
     player_name = st.text_input('Enter your name:')
 
     # Get the number of rounds to play
