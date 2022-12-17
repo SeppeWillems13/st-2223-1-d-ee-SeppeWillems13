@@ -12,7 +12,7 @@ def determine_winner(player, computer):
     else:
         return "Computer"
 
-st.title("Rock Paper Scissors")
+st.title("Rock Paper Scissors By Seppe")
 
 player_choice = st.radio("Choose your weapon:", ("rock", "paper", "scissors"))
 
