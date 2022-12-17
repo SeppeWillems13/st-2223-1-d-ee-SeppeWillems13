@@ -10,16 +10,16 @@ st.title('Rock, Paper, Scissors')
 # Get the player's name
 player_name = st.text_input('Enter your name:')
 
+# Get the number of rounds to play
+num_rounds = st.slider('Number of rounds:', 1, 10, 3)
+
 # Initialize the score
 score = {'wins': 0, 'losses': 0, 'ties': 0}
 
-# Check if the player's name has been entered
-if player_name:
+# Check if the player's name and number of rounds have been entered
+if player_name and num_rounds:
     # Start the game loop
     while True:
-        # Get the number of rounds to play
-        num_rounds = st.slider('Number of rounds:', 1, 10, 3)
-
         # Play multiple rounds
         for i in range(num_rounds):
             st.write(f'{player_name}, choose your option:')
@@ -59,4 +59,4 @@ if player_name:
         if not play_again:
             break
 else:
-    st.write('Please enter your name to start the game.')
+    st.write('Please enter your name and choose the number of rounds to play to start the game.')
