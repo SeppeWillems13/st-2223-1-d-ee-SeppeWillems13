@@ -7,19 +7,19 @@ options = ['rock', 'paper', 'scissors']
 # Start the game
 st.title('Rock, Paper, Scissors')
 
+# Get the player's name
+player_name = st.text_input('Enter your name:')
+
 # Initialize the score
 score = {'wins': 0, 'losses': 0, 'ties': 0}
 
-while True:
-    # Get the player's name
-    st.experimental_memo.clear()
-    player_name = st.text_input('Enter your name:')
+# Check if the player's name has been entered
+if player_name:
+    # Start the game loop
+    while True:
+        # Get the number of rounds to play
+        num_rounds = st.slider('Number of rounds:', 1, 10, 3)
 
-    # Get the number of rounds to play
-    num_rounds = st.slider('Number of rounds:', 1, 10, 3)
-
-    # Check if the player's name and number of rounds have been entered
-    if player_name and num_rounds:
         # Play multiple rounds
         for i in range(num_rounds):
             st.write(f'{player_name}, choose your option:')
@@ -53,10 +53,10 @@ while True:
 
             # Display the score
             st.write(f'Wins: {score["wins"]}  Losses: {score["losses"]}  Ties: {score["ties"]}')
-    else:
-        st.write('Please enter your name and number of rounds to play.')
 
-    # Ask the player if they want to play again
-    play_again = st.button('Play again?')
-    if not play_again:
-        break
+        # Ask the player if they want to play again
+        play_again = st.button('Play again?')
+        if not play_again:
+            break
+else:
+    st.write('Please enter your name to start the game.')
