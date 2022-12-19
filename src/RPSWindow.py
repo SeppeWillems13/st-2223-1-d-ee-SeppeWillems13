@@ -71,7 +71,7 @@ class RPSWindow(QWidget):
 
     def create_ui(self):
         # create the username input field
-        self.username_label = QLabel('Username:')
+        self.username_label = QLabel('Welcome:')
         self.username_input = QLineEdit()
 
         # create the play button
@@ -133,7 +133,7 @@ class RPSWindow(QWidget):
 
     def play(self):
         self.username = self.username_input.text()
-
+        self.username_label.setText(f'Username: {self.username}')
         # get the player's stats from the database
         player_stats = self.get_player_stats(self.username)
         self.wins = player_stats['wins']
