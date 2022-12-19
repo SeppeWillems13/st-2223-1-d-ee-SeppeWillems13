@@ -16,9 +16,8 @@ class Leaderboard:
                 wins integer,
                 losses integer,
                 ties integer,
-                games_played integer
-            )
-        ''')
+                games_played integer )
+                ''')
 
     def get_player_stats(self, username):
         # get the player's stats from the database
