@@ -1,6 +1,10 @@
 import cv2
 import os
 import sys
+from cvzone.HandTrackingModule import HandDetector
+import numpy as np
+import math
+import time
 
 
 def collect_images(label_name, num_samples):
@@ -8,8 +12,13 @@ def collect_images(label_name, num_samples):
     save_path = os.path.join('image_data', label_name)
     os.makedirs(save_path, exist_ok=True)
 
+    offset = 20
+    imgSize = 300
+
     # Initialize the camera and set up the video capture
     cap = cv2.VideoCapture(0)
+    detector = HandDetector(maxHands=1)
+
     if not cap.isOpened():
         print("Error opening video stream or file")
         return
@@ -18,35 +27,50 @@ def collect_images(label_name, num_samples):
     count = 0
 
     while True:
-        # Capture the frame from the camera
-        ret, frame = cap.read()
-        if not ret:
-            print("Error reading frame")
-            break
-
-        # Check if we have reached the target number of samples
         if count == num_samples:
             break
 
-        # Draw the rectangle and collect the images if the "start" flag is set
-        cv2.rectangle(frame, (100, 100), (500, 500), (255, 255, 255), 2)
+        success, img = cap.read()
+        hands, img = detector.findHands(img)
+        if hands:
+            hand = hands[0]
+            x, y, w, h = hand['bbox']
+
+            imgWhite = np.ones((imgSize, imgSize, 3), np.uint8) * 255
+            imgCrop = img[y - offset:y + h + offset, x - offset:x + w + offset]
+
+            imgCropShape = imgCrop.shape
+
+            aspectRatio = h / w
+
+            if aspectRatio > 1:
+                k = imgSize / h
+                wCal = math.ceil(k * w)
+                imgResize = cv2.resize(imgCrop, (wCal, imgSize))
+                imgResizeShape = imgResize.shape
+                wGap = math.ceil((imgSize - wCal) / 2)
+                imgWhite[:, wGap:wCal + wGap] = imgResize
+
+            else:
+                k = imgSize / w
+                hCal = math.ceil(k * h)
+                imgResize = cv2.resize(imgCrop, (imgSize, hCal))
+                imgResizeShape = imgResize.shape
+                hGap = math.ceil((imgSize - hCal) / 2)
+                imgWhite[hGap:hCal + hGap, :] = imgResize
+
+            cv2.imshow("ImageCrop", imgCrop)
+            cv2.imshow("ImageWhite", imgWhite)
+
         if start:
-            roi = frame[100:500, 100:500]
-            save_path = os.path.join(save_path, '{}.jpg'.format(count + 1))
-            cv2.imwrite(save_path, roi)
             count += 1
+            cv2.imwrite(f'{save_path}/Image_{time.time()}.jpg', imgWhite)
+            print(count)
 
-        # Display the video frame and the count
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(frame, f"Collecting {count}", (5, 50), font, 0.7, (0, 255, 255), 2, cv2.LINE_AA)
-        cv2.imshow("Collecting images", frame)
-
-        # Check for user input
-        k = cv2.waitKey(10)
-        if k == ord('a'):
+        cv2.imshow("Image", img)
+        key = cv2.waitKey(1)
+        if key == ord("s"):
             start = not start
-        elif k == ord('q'):
-            break
 
     # Release the camera and destroy the window
     cap.release()
@@ -76,8 +100,6 @@ def main():
 
     # Collect the images
     collect_images(label_name, num_samples)
-
-
 
 
 if __name__ == '__main__':
