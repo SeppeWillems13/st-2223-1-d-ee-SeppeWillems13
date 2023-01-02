@@ -64,8 +64,20 @@ def main():
         print("Usage: python collect_images.py LABEL_NAME NUM_SAMPLES")
         return
 
+    # Check that the label name is valid
+    if label_name not in ['rock', 'paper', 'scissors']:
+        print("Error: label name must be 'rock', 'paper', or 'scissors'")
+        return
+
+    # Check that the number of samples is within a valid range
+    if num_samples < 1 or num_samples > 1000:
+        print("Error: number of samples must be between 1 and 1000")
+        return
+
     # Collect the images
     collect_images(label_name, num_samples)
+
+
 
 
 if __name__ == '__main__':
