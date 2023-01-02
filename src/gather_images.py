@@ -1,3 +1,4 @@
+"""Import all dependencies."""
 import cv2
 import os
 import sys
@@ -8,6 +9,7 @@ import time
 
 
 def collect_images(label_name, num_samples):
+    """Get num_samples of type label_name with hand recognition and save them in their respected folder"""
     # Set up the save path and create the directory if it doesn't exist
     save_path = os.path.join('image_data', label_name)
     os.makedirs(save_path, exist_ok=True)
@@ -63,7 +65,6 @@ def collect_images(label_name, num_samples):
                 cv2.imwrite(f'{save_path}/Image_{time.time()}.jpg', img_white)
                 print(count)
 
-
         font = cv2.FONT_HERSHEY_SIMPLEX
         cv2.putText(img, "Collecting {}/{} of type {}".format(count, num_samples, label_name),
                     (5, 50), font, 0.7, (0, 255, 255), 2, cv2.LINE_AA)
@@ -81,7 +82,7 @@ def collect_images(label_name, num_samples):
 
 
 def main():
-    # Parse the command-line arguments
+    """Main method checks if the args are between 1 and 1000 and of type rock,paper,scissor"""
     # noinspection PyBroadException
     try:
         label_name = sys.argv[1]
