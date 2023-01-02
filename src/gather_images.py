@@ -13,7 +13,7 @@ def collect_images(label_name, num_samples):
     os.makedirs(save_path, exist_ok=True)
 
     offset = 20
-    imgSize = 300
+    img_size = 300
 
     # Initialize the camera and set up the video capture
     cap = cv2.VideoCapture(0)
@@ -31,47 +31,49 @@ def collect_images(label_name, num_samples):
             break
 
         success, img = cap.read()
-        hands, img = detector.findHands(img)
+        hands = detector.findHands(img, draw=False)
         if hands:
             hand = hands[0]
             x, y, w, h = hand['bbox']
 
-            imgWhite = np.ones((imgSize, imgSize, 3), np.uint8) * 255
-            imgCrop = img[y - offset:y + h + offset, x - offset:x + w + offset]
+            img_white = np.ones((img_size, img_size, 3), np.uint8) * 255
+            img_crop = img[y - offset:y + h + offset, x - offset:x + w + offset]
 
-            imgCropShape = imgCrop.shape
+            aspect_ratio = h / w
 
-            aspectRatio = h / w
-
-            if aspectRatio > 1:
-                k = imgSize / h
-                wCal = math.ceil(k * w)
-                imgResize = cv2.resize(imgCrop, (wCal, imgSize))
-                imgResizeShape = imgResize.shape
-                wGap = math.ceil((imgSize - wCal) / 2)
-                imgWhite[:, wGap:wCal + wGap] = imgResize
+            if aspect_ratio > 1:
+                k = img_size / h
+                w_cal = math.ceil(k * w)
+                img_resize = cv2.resize(img_crop, (w_cal, img_size))
+                w_gap = math.ceil((img_size - w_cal) / 2)
+                img_white[:, w_gap:w_cal + w_gap] = img_resize
 
             else:
-                k = imgSize / w
-                hCal = math.ceil(k * h)
-                imgResize = cv2.resize(imgCrop, (imgSize, hCal))
-                imgResizeShape = imgResize.shape
-                hGap = math.ceil((imgSize - hCal) / 2)
-                imgWhite[hGap:hCal + hGap, :] = imgResize
+                k = img_size / w
+                h_cal = math.ceil(k * h)
+                img_resize = cv2.resize(img_crop, (img_size, h_cal))
+                h_gap = math.ceil((img_size - h_cal) / 2)
+                img_white[h_gap:h_cal + h_gap, :] = img_resize
 
-            cv2.imshow("ImageCrop", imgCrop)
-            cv2.imshow("ImageWhite", imgWhite)
+            cv2.imshow("ImageCrop", img_crop)
+            cv2.imshow("ImageWhite", img_white)
 
-        if start:
-            count += 1
-            cv2.imwrite(f'{save_path}/Image_{time.time()}.jpg', imgWhite)
-            print(count)
+            if start:
+                count += 1
+                cv2.imwrite(f'{save_path}/Image_{time.time()}.jpg', img_white)
+                print(count)
+
+
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        cv2.putText(img, "Collecting {}/{} of type {}".format(count, num_samples, label_name),
+                    (5, 50), font, 0.7, (0, 255, 255), 2, cv2.LINE_AA)
 
         cv2.imshow("Image", img)
         key = cv2.waitKey(1)
         if key == ord("s"):
             start = not start
-
+        if key == ord('q'):
+            break
     # Release the camera and destroy the window
     cap.release()
     cv2.destroyAllWindows()
@@ -80,6 +82,7 @@ def collect_images(label_name, num_samples):
 
 def main():
     # Parse the command-line arguments
+    # noinspection PyBroadException
     try:
         label_name = sys.argv[1]
         num_samples = int(sys.argv[2])
