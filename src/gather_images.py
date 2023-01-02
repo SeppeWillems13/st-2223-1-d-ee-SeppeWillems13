@@ -1,12 +1,11 @@
 """Import all dependencies."""
-import cv2
 import os
 import sys
 from cvzone.HandTrackingModule import HandDetector
 import numpy as np
 import math
 import time
-
+import cv2
 
 def collect_images(label_name, num_samples):
     """Get num_samples of type label_name with hand recognition and save them in their respected folder"""
@@ -32,7 +31,7 @@ def collect_images(label_name, num_samples):
         if count == num_samples:
             break
 
-        success, img = cap.read()
+        img = cap.read()
         hands = detector.findHands(img, draw=False)
         if hands:
             hand = hands[0]
