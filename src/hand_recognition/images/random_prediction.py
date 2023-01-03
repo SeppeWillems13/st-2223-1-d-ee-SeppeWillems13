@@ -3,7 +3,7 @@ import random
 import shutil
 
 
-class random_prediciton:
+class random_prediction:
     def __init__(self, paper_dir, scissors_dir, rock_dir, prediction_dir):
         self.paper_dir = paper_dir
         self.scissors_dir = scissors_dir
@@ -48,7 +48,7 @@ rock_dir = '../image_data/rock'
 prediction_dir = 'prediction_unlabeled_images'
 
 # Create an instance of the ImageShuffler class
-image_shuffler = random_prediciton(paper_dir, scissors_dir, rock_dir, prediction_dir)
+image_shuffler = random_prediction(paper_dir, scissors_dir, rock_dir, prediction_dir)
 
 # Call the shuffle_and_save_images method
 image_shuffler.shuffle_and_save_images()

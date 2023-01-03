@@ -27,7 +27,7 @@ def collect_images(label_name, num_samples):
 
     start = False
     count = 0
-    delay = 1000  # delay in milliseconds
+    #delay = 1000  # delay in milliseconds
     start_key = ord('s')
     stop_key = ord('q')
 
@@ -90,13 +90,13 @@ def collect_images(label_name, num_samples):
         cv2.imshow("Image", img)
 
         # Check if the user has pressed the start key
-        key = cv2.waitKey(delay)
-        if key == start_key:
-            start = True
+        #key = cv2.waitKey(delay)
+        #if key == start_key:
+        start = True
 
         # Check if the user has pressed the stop key
-        elif key == stop_key:
-            break
+        #elif key == stop_key:
+            #break
 
         # Save the preprocessed image to a file if collection has started
         if start:
