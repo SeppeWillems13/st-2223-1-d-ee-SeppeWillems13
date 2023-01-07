@@ -2,18 +2,12 @@ import cv2
 import numpy as np
 from PIL import Image, ImageOps
 from keras.models import load_model
-import os
 
 
 class HandClassifier:
-    def __init__(self):
-        model_path = 'keras/keras_model.h5'
-        labels_path = "keras/labels.txt"
-        abs_model_path = os.path.abspath(model_path)
-        abs_label_path = os.path.abspath(labels_path)
-
-        self.model = load_model(abs_model_path, compile=False)
-        with open(abs_label_path, 'r') as f:
+    def __init__(self, model_path, labels_path):
+        self.model = load_model(model_path, compile=False)
+        with open(labels_path, 'r') as f:
             self.labels = f.read().splitlines()
 
     def classify(self, image):
