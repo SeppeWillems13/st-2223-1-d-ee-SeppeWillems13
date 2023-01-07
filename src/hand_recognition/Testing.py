@@ -1,15 +1,13 @@
 import cv2
 from cvzone.HandTrackingModule import HandDetector
-from cvzone.ClassificationModule import Classifier
-import numpy as np
 import math
 
-from src.hand_recognition.HandClassifier import HandClassifier
-from src.hand_recognition.ImageProcessor import ImageProcessor
+from hand_recognition.HandClassifier import HandClassifier
+from hand_recognition.ImageProcessor import ImageProcessor
 
 cap = cv2.VideoCapture(0)
 detector = HandDetector(maxHands=1)
-classifier = HandClassifier("keras/keras_model.h5", "keras/labels.txt")
+classifier = HandClassifier()
 
 offset = 20
 img_size = 300
