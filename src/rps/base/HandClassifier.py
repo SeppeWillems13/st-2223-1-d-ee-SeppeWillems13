@@ -7,13 +7,13 @@ import os
 
 class HandClassifier:
     def __init__(self):
-        model_path = 'keras/keras_model.h5'
-        labels_path = "keras/labels.txt"
-        abs_model_path = os.path.abspath(model_path)
-        abs_label_path = os.path.abspath(labels_path)
+        # Get the absolute paths to the model and labels files
+        model_path = os.path.abspath('../keras/keras_model.h5')
+        labels_path = os.path.abspath('../keras/labels.txt')
 
-        self.model = load_model(abs_model_path, compile=False)
-        with open(abs_label_path, 'r') as f:
+        # Load the model and labels
+        self.model = load_model(model_path, compile=False)
+        with open(labels_path, 'r') as f:
             self.labels = f.read().splitlines()
 
     def classify(self, image):
@@ -41,4 +41,4 @@ class HandClassifier:
         class_name = self.labels[index]
         confidence_score = prediction[0][index]
 
-        return class_name, confidence_score
+        return class_name

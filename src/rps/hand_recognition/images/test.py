@@ -64,7 +64,7 @@ def collect_images(label_name=None, num_samples=None, image_dir=None):
         image_files = os.listdir(image_dir)
         # Sort the files by name
         image_files.sort()
-        # Iterate through the files and process the images
+        # Iterate through the files and process_image the images
         for file in image_files:
 
             # Load the image file

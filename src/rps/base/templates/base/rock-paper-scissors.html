@@ -1,65 +1,108 @@
-<template>
-  <div>
-    <video id="webcam" width="640" height="480" autoplay></video>
-    <button id="play-button" onclick="play()">Play</button>
-  </div>
-</template>
+{% load static %}
 
-<script>
-  // Function to start the webcam and display the video feed
-  function startWebcam() {
-    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-      .then(function(stream) {
-        var video = document.getElementById('webcam');
-        video.srcObject = stream;
-        video.play();
-      })
-      .catch(function(err) {
-        console.log("An error occurred: " + err);
-      });
-  }
+    <div id="videos">
+        <video class="video-player" id="user-1" autoplay playsinline></video>
+        <video class="video-player" id="user-2" autoplay playsinline></video>
+    </div>
 
-  // Function to capture the image from the webcam and send it to the Django view
-  function play() {
-    // Stop the video stream from the webcam
-    var video = document.getElementById('webcam');
-    var stream = video.srcObject;
-    var tracks = stream.getTracks();
+    <div id="controls">
 
-    for (var i = 0; i < tracks.length; i++) {
-      var track = tracks[i];
-      track.stop();
-    }
+        <div class="control-container" id="camera-btn">
+            <img src="{% static 'icons/camera.png' %}" />
+        </div>
 
-    // Create a canvas element to draw the image on
-    var canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    var context = canvas.getContext('2d');
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        <div class="control-container" id="mic-btn">
+            <img src="{% static 'icons/mic.png' %}" />
+        </div>
 
-    // Convert the image to a data URL
-    var imageData = canvas.toDataURL('image/jpeg');
+        <a href="lobby.html">
+            <div class="control-container" id="leave-btn">
+            <img src="{% static 'icons/phone.png' %}" />
+            </div>
+        </a>
 
-    // Send the image to the Django view using an AJAX request
-    $.ajax({
-      type: 'POST',
-      url: '{% url 'process_image' %}',
-      data: {
-        csrfmiddlewaretoken: '{{ csrf_token }}',
-        image_data: imageData,
-      },
-      success: function(response) {
-        // Process the response from the view (e.g., play the rock-paper-scissors game)
-      },
-      error: function(xhr, status, error) {
-        console.log(error);
-      }
-    });
-  }
+    </div>
 
-  // Start the webcam when the template is loaded
-  $(document).ready(function() {
-    startWebcam();
-  });
-</script>
+    <script src="{% static 'js/agora-rtm-sdk-1.5.1.js' %}"></script>
+    <script src="{% static 'js/video.js' %}"></script>
+
+<style>
+ *{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+#videos{
+    display: grid;
+    grid-template-columns: 1fr;
+    height: 100vh;
+    overflow:hidden;
+}
+
+.video-player{
+    background-color: black;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+#user-2{
+    display: none;
+}
+
+.smallFrame{
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    height: 170px;
+    width: 300px;
+    border-radius: 5px;
+    border:2px solid #b366f9;
+    -webkit-box-shadow: 3px 3px 15px -1px rgba(0,0,0,0.77);
+    box-shadow: 3px 3px 15px -1px rgba(0,0,0,0.77);
+    z-index: 999;
+}
+
+
+#controls{
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform:translateX(-50%);
+    display: flex;
+    gap: 1em;
+}
+
+
+.control-container{
+  background-color: rgb(179, 102, 249, .9);
+  padding: 20px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+
+.control-container img{
+    height: 30px;
+    width: 30px;
+}
+
+#leave-btn{
+    background-color: rgb(255,80,80, 1);
+}
+
+@media screen and (max-width:600px) {
+        .smallFrame{
+            height: 80px;
+            width: 120px;
+        }
+
+        .control-container img{
+            height: 20px;
+            width: 20px;
+        }
+}
+</style>

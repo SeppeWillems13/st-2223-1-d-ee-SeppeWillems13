@@ -19,5 +19,6 @@ urlpatterns = [
     path('players/', views.playersPage, name="players"),
     path('activity/', views.activityPage, name="activity"),
 
-    path('process_image/', views.process_image, name='process_image'),
+    path('video_feed/', views.video_feed, name='video_feed'),
+
 ]

@@ -2,8 +2,8 @@ import cv2
 from cvzone.HandTrackingModule import HandDetector
 import math
 
-from hand_recognition.HandClassifier import HandClassifier
-from hand_recognition.ImageProcessor import ImageProcessor
+from rps.base.HandClassifier import HandClassifier
+from rps.base.ImageProcessor import ImageProcessor
 
 cap = cv2.VideoCapture(0)
 detector = HandDetector(maxHands=1)
@@ -22,7 +22,7 @@ while True:
     if hands:
         hand = hands[0]
         x, y, w, h = hand['bbox']
-        img_white, img_resize = processor.process(img, hand)
+        img_white, img_resize = processor.process_image(img, hand)
         # Calculate the aspect ratio of the cropped image
         aspect_ratio = h / w
         # If the aspect ratio is greater than 1, add the resized image to the white image
@@ -38,7 +38,7 @@ while True:
             img_white[:, w_gap:w_gap + img_resize.shape[1]] = img_resize
 
         # improve with probability!!!!
-        prediction, confidence_score = classifier.classify(img_white)
+        prediction = classifier.classify(img_white)
 
         cv2.rectangle(img, (x - offset, y - offset - 50),
                       (x - offset + 90, y - offset - 50 + 50), (255, 0, 255), cv2.FILLED)

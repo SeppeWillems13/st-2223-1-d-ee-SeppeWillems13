@@ -8,7 +8,7 @@ class ImageProcessor:
         self.img_size = img_size
         self.offset = offset
 
-    def process(self, img, hand):
+    def process_image(self, img, hand):
         # Crop the image based on the bounding box of the detected hand
         x, y, w, h = hand['bbox']
         img_crop = img[y - self.offset:y + h + self.offset, x - self.offset:x + w + self.offset]

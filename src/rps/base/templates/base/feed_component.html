@@ -1,5 +1,5 @@
 {% for room in rooms %}
-<div class="roomListRoom">
+<div class="roomListRoom" data-room-id="{{ room.id }}">
     <div class="roomListRoom__header">
         <a href="{% url 'user-profile' room.host.id %}" class="roomListRoom__author">
             <div class="avatar avatar--small">
@@ -36,3 +36,14 @@
     </div>
 </div>
 {% endfor %}
+
+<script>
+    let roomElements = document.querySelectorAll('.roomListRoom');
+    roomElements.forEach((room) => {
+        room.addEventListener('click', (event) => {
+            let roomId = event.currentTarget.dataset.roomId;
+            let url = '{% url "room" "roomId"%}';
+            window.location = url;
+        });
+    });
+</script>

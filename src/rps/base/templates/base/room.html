@@ -1,5 +1,5 @@
 {% extends 'main.html' %}
-
+{% load static %}
 {% block content %}
 <main class="profile-page layout layout--2">
   <div class="container">
@@ -67,20 +67,11 @@
             </a>
           </div>
         </div>
-
-
       <div class="room__conversation">
           <div class="threads scroll">
             {% include 'base/rock-paper-scissors.html' %}
           </div>
         </div>
-
-      </div>
-      <div class="room__message">
-        <form action="" method="POST">
-          {% csrf_token %}
-          <input name="body" placeholder="Write your message here..." />
-        </form>
       </div>
     </div>
     <!-- Room End -->
@@ -105,5 +96,4 @@
     <!--  End -->
   </div>
 </main>
-<script src="script.js"></script>
 {% endblock content %}

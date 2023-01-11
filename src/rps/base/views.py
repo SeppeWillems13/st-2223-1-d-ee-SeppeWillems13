@@ -1,17 +1,24 @@
-from django.core.paginator import Paginator
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse, Http404
+import cv2
+from cvzone.HandTrackingModule import HandDetector
+from django import forms
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.db.models import Q
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.core.validators import EmailValidator
+from django.db.models import Q
+from django.forms import Form
+from django.http import HttpResponse, Http404, StreamingHttpResponse
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 
-from .models import Room, Game, User, Player
+from . import ImageProcessor
+from . import HandClassifier
+
+
+
 from .forms import RoomForm, UserForm, MyUserCreationForm
-from django import forms
-from django.forms import Form
-from django.core.validators import EmailValidator
+from .models import Room, Game, User, Player
 
 
 # loginform validator
@@ -262,26 +269,9 @@ def playerDetailsPage(request, pk):
     return render(request, 'base/player_details.html', {'player': player})
 
 
-import random
+def stream(request):
+    print(request)
 
 
-def process_image(request):
-    # Check that the request method is POST
-    if request.method == 'POST':
-        # Get the image data from the request
-        image_data = request.POST.get('image_data')
-
-        # Process the image (e.g., analyze the image to determine the rock-paper-scissors value)
-        result = process_image_data(image_data)
-
-        # Return the result as a response
-        return HttpResponse(result)
-    else:
-        return HttpResponse("Error: Invalid request method")
-
-
-def process_image_data(image_data):
-    # Return a random rock-paper-scissors value for now
-    # TODO fix this gets processed and predicted by python classes
-    options = ['rock', 'paper', 'scissors']
-    return random.choice(options)
+def video_feed(request):
+    return StreamingHttpResponse(stream(request), content_type='multipart/x-mixed-replace; boundary=frame')
