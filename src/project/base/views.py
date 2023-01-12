@@ -231,7 +231,7 @@ def updateRoom(request, pk):
 @login_required(login_url='login')
 def deleteRoom(request, pk):
     # Handle the case where the room does not exist
-    _room = get_object_or_404(Room, id=pk)
+    _room = get_object_or_404(Room, code=pk)
 
     if request.user != _room.host:
         return HttpResponse('Your are not allowed here!!')

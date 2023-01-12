@@ -9,10 +9,11 @@ class User(AbstractUser):
     name = models.CharField(max_length=200, null=True)
     email = models.EmailField(unique=True, null=True)
     bio = models.TextField(null=True)
-
     avatar = models.ImageField(null=True, default="avatar.svg")
-
     REQUIRED_FIELDS = []
+
+    def __str__(self):
+        return self.username
 
 
 class Room(models.Model):
@@ -90,9 +91,13 @@ class Game(models.Model):
 
 
 class Player(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='players', null=True, blank=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='players')
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='players')
     is_host = models.BooleanField(default=False)
+    wins = models.IntegerField(default=0)
+    draws = models.IntegerField(default=0)
+    losses = models.IntegerField(default=0)
+    favorite_move = models.CharField(max_length=10)
 
     class Meta:
         unique_together = ('user', 'room',)
