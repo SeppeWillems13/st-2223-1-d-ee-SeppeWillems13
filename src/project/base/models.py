@@ -4,6 +4,36 @@ import uuid
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+# Choices for the game_move field
+ROCK = 'Rock'
+PAPER = 'Paper'
+SCISSORS = 'Scissors'
+GAME_MOVE_CHOICES = (
+    (ROCK, 'Rock'),
+    (PAPER, 'Paper'),
+    (SCISSORS, 'Scissors'),
+)
+
+# Choices for the game_status field
+ONGOING = 'Ongoing'
+COMPLETED = 'Completed'
+ABANDONED = 'Abandoned'
+GAME_STATUS_CHOICES = (
+    (ONGOING, 'Ongoing'),
+    (COMPLETED, 'Completed'),
+    (ABANDONED, 'Abandoned'),
+)
+
+# Choices for the result field
+WIN = 'Win'
+LOSE = 'Lose'
+TIE = 'Tie'
+GAME_RESULT_CHOICES = (
+    (WIN, 'Win'),
+    (LOSE, 'Lose'),
+    (TIE, 'Tie'),
+)
+
 
 class User(AbstractUser):
     name = models.CharField(max_length=200, null=True)
@@ -11,6 +41,9 @@ class User(AbstractUser):
     bio = models.TextField(null=True)
     avatar = models.ImageField(null=True, default="avatar.svg")
     REQUIRED_FIELDS = []
+
+    class Meta:
+        ordering = ['username']
 
     def __str__(self):
         return self.username
@@ -31,48 +64,7 @@ class Room(models.Model):
         return self.name
 
 
-class PlayerManager(models.Manager):
-    def create_player(self, user, room, is_host=False):
-        if not User.objects.filter(pk=user.pk).exists():
-            raise ValueError('User does not exist')
-        if room.players.count() >= 2 and not room.online:
-            raise ValueError('Room is full')
-        player = self.create(user=user, room=room, is_host=is_host)
-        room.players.add(player)
-        return player
-
-
 class Game(models.Model):
-    # Choices for the game_move field
-    ROCK = 'Rock'
-    PAPER = 'Paper'
-    SCISSORS = 'Scissors'
-    GAME_MOVE_CHOICES = (
-        (ROCK, 'Rock'),
-        (PAPER, 'Paper'),
-        (SCISSORS, 'Scissors'),
-    )
-
-    # Choices for the game_status field
-    ONGOING = 'Ongoing'
-    COMPLETED = 'Completed'
-    ABANDONED = 'Abandoned'
-    GAME_STATUS_CHOICES = (
-        (ONGOING, 'Ongoing'),
-        (COMPLETED, 'Completed'),
-        (ABANDONED, 'Abandoned'),
-    )
-
-    # Choices for the result field
-    WIN = 'Win'
-    LOSE = 'Lose'
-    TIE = 'Tie'
-    GAME_RESULT_CHOICES = (
-        (WIN, 'Win'),
-        (LOSE, 'Lose'),
-        (TIE, 'Tie'),
-    )
-
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
@@ -91,19 +83,28 @@ class Game(models.Model):
 
 
 class Player(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='players')
-    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='players')
-    is_host = models.BooleanField(default=False)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+    room = models.ManyToManyField(Room, related_name='players', blank=True)
     wins = models.IntegerField(default=0)
     draws = models.IntegerField(default=0)
     losses = models.IntegerField(default=0)
-    favorite_move = models.CharField(max_length=10)
-
-    class Meta:
-        unique_together = ('user', 'room',)
+    favorite_move = models.CharField(max_length=10, choices=Game.GAME_MOVE_CHOICES, null=True)
 
     def __str__(self):
         return self.user.username
+
+    class Meta:
+        ordering = ['user__username']
+
+
+class Result(models.Model):
+    player = models.ForeignKey(Player, on_delete=models.CASCADE)
+    game = models.ForeignKey(Game, on_delete=models.CASCADE)
+    result = models.CharField(max_length=10, choices=Game.GAME_RESULT_CHOICES)
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created']
 
 
 @receiver(post_save, sender=User)
