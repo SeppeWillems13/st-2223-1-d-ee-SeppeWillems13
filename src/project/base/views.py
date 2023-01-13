@@ -100,13 +100,16 @@ def room(request, pk):
     except Room.DoesNotExist:
         return room_not_found(request, pk)
 
-    if _room.online and _room.players.count() < 2 and _room.host != request.user:
-        player = Player.objects.get(user=request.user)
-        _room.players.add(player)
-        _room.save()
-    else:
-        #todo add template for room full error
+    # if the room is offline only the host can access it otherwise redirect to home
+    if not _room.online and request.user != _room.host:
         return room_not_found(request, pk)
+    # if the room is online but has more than 2 players redirect to home
+    if _room.online and _room.players.count() > 2:
+        return room_not_found(request, pk)
+
+    if request.user.is_authenticated:
+        add_player_to_room(_room, request)
+
     # Define the template name
     template_name = 'base/room.html'
 
@@ -121,16 +124,20 @@ def room(request, pk):
                 room=_room,
                 body=request.POST.get('body')
             )
-            return redirect('room', pk=_room.code)
+            return redirect(reverse('room', args=[pk]))
 
-    # Retrieve all the games in the room
-    room_games = _room.game_set.all()
-    # Retrieve all the participants in the room
-    players = _room.players.all()
+    room_games = _room.game_set.select_related('user').all()
+    players = _room.players.select_related('user').all()
 
     context = {'room': _room, 'room_games': room_games,
                'players': players}
     return render(request, template_name, context)
+
+
+def add_player_to_room(_room, request):
+    player = Player.objects.get(user=request.user)
+    _room.players.add(player)
+    _room.save()
 
 
 def room_not_found(request, pk):
@@ -318,3 +325,19 @@ class VideoConsumer(AsyncWebsocketConsumer):
 
     async def send_video(self, bytes_data):
         await self.send(bytes_data=bytes_data)
+
+
+@login_required(login_url='login')
+def leave_room(request, room_code):
+    if request.method == 'POST':
+        room = Room.objects.filter(code=room_code)
+        if room.exists():
+            player = Player.objects.get(user=request.user)
+            room = room[0]
+            room.players.remove(player)
+            room.save()
+        else:
+            print('Room does not exist')
+        return redirect('home')
+    else:
+        return redirect('home')

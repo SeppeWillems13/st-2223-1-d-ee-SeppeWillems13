@@ -11,6 +11,7 @@ urlpatterns = [
     path('profile/<str:pk>/', views.userProfile, name="user-profile"),
 
     path('join-room/', views.joinRoom, name="join-room"),
+    path('leave_room/<str:room_code>/', views.leave_room, name='leave_room'),
     path('create-room/', views.createRoom, name="create-room"),
     path('update-room/<str:pk>/', views.updateRoom, name="update-room"),
     path('delete-room/<str:pk>/', views.deleteRoom, name="delete-room"),

@@ -50,7 +50,7 @@ let init = async () => {
     localStream = await navigator.mediaDevices.getUserMedia(constraints)
     document.getElementById('user-1').srcObject = localStream
 }
- 
+
 
 let handleUserLeft = (MemberId) => {
     document.getElementById('user-2').style.display = 'none'
@@ -165,10 +165,46 @@ let toggleCamera = async () => {
 let playGame = async () => {
     window.location.href = `/game/${roomId}`
 }
-  
+
+let csrftoken = document.getElementsByName('csrfmiddlewaretoken')[0];
+print(csrftoken)
+print(csrftoken.value)
+
+
+let leaveRoom = async () => {
+    // Get the current URL
+    let currentUrl = window.location.href;
+    // Split the URL to get the room code
+    let parts = currentUrl.split("/");
+    let roomCode = parts[parts.length - 1];
+
+    // Make an HTTP request to the view function 'leave_room' in views.py
+    fetch('/leave_room/' + roomCode, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken,
+        },
+    }).then(response => {
+    if(response.status === 200){
+        console.log("Left the room successfully")
+        window.location.href = '/'
+    }
+})
+.catch(error => {
+    console.log("Error leaving the room")
+});
+
+function getCookie(name) {
+  var value = "; " + document.cookie;
+  var parts = value.split("; " + name + "=");
+  if (parts.length == 2) return parts.pop().split(";").shift();
+}
+}
+
 window.addEventListener('beforeunload', leaveChannel)
 
 document.getElementById('camera-btn').addEventListener('click', toggleCamera)
 document.getElementById('mic-btn').addEventListener('click', playGame)
-
+document.getElementById('leave-btn').addEventListener('click', leaveRoom)
 init()
