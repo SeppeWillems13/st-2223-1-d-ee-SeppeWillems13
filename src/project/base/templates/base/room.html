@@ -80,14 +80,14 @@
     <div class="participants">
       <h3 class="participants__top">Players <span>({{players.count}} Joined)</span></h3>
       <div class="participants__list scroll">
-        {% for user in players %}
-        <a href="{%  url 'user-profile' user.id %}" class="participant">
+        {% for player in players %}
+        <a href="{%  url 'user-profile' player.user.id %}" class="participant">
           <div class="avatar avatar--medium">
-            <img src="{{user.avatar.url}}" />
+            <img src="{{player.user.avatar.url}}" />
           </div>
           <p>
-            {{user.name}}
-            <span>@{{user.username}}</span>
+            {{player.user.name}}
+            <span>@{{player.user.username}}</span>
           </p>
         </a>
         {% endfor %}

@@ -94,19 +94,19 @@ def home(request):
     return render(request, 'base/home.html', context)
 
 
-
 def room(request, pk):
-    # Retrieve the room instance or return a 404 error if it does not exist
     try:
         _room = Room.objects.get(pk=pk)
     except Room.DoesNotExist:
         return room_not_found(request, pk)
 
-    # Retrieve all the games in the room
-    room_games = _room.game_set.all()
-    # Retrieve all the participants in the room
-    players = _room.players.all()
-
+    if _room.online and _room.players.count() < 2 and _room.host != request.user:
+        player = Player.objects.get(user=request.user)
+        _room.players.add(player)
+        _room.save()
+    else:
+        #todo add template for room full error
+        return room_not_found(request, pk)
     # Define the template name
     template_name = 'base/room.html'
 
@@ -121,9 +121,12 @@ def room(request, pk):
                 room=_room,
                 body=request.POST.get('body')
             )
-            # Add the request user to the participants of the room
-            _room.participants.add(request.user)
-            return redirect('room', pk=_room.id)
+            return redirect('room', pk=_room.code)
+
+    # Retrieve all the games in the room
+    room_games = _room.game_set.all()
+    # Retrieve all the participants in the room
+    players = _room.players.all()
 
     context = {'room': _room, 'room_games': room_games,
                'players': players}
@@ -159,11 +162,13 @@ def createRoom(request):
     if request.method == 'POST':
         form = RoomForm(request.POST)
         if form.is_valid():
-
             room = form.save(commit=False)
-            print(room)
             room.host = request.user
             room.save()
+
+            player = Player.objects.get(user=request.user)
+            room.players.add(player)
+
             messages.success(request, 'Room created successfully')
             return redirect('home')
         else:
@@ -183,18 +188,17 @@ def joinRoom(request):
     # Render the template with the form and topics
     context = {'form': form}
 
-    #check if post request
+    # check if post request
     if request.method == 'POST':
-        #get the room code
+        # get the room code
         room_code = request.POST.get('code')
-        print(room_code)
-        #check if room exists
+        # check if room exists
         room = Room.objects.filter(code=room_code)
         if room.exists():
-            #add the user to the participants of the room
+            player = Player.objects.get(user=request.user)
             room = room[0]
-            room.players.add(request.user)
-            return redirect('room', pk=room.id)
+            room.players.add(player)
+            return redirect('room', pk=room.code)
         else:
             messages.error(request, 'Room does not exist')
             return render(request, template_name, context)

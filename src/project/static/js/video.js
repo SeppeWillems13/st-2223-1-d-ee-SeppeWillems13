@@ -163,7 +163,7 @@ let toggleCamera = async () => {
 }
 
 let playGame = async () => {
-#send the webcam stream to the server and get the response from the server and display it on the screen
+    window.location.href = `/game/${roomId}`
 }
   
 window.addEventListener('beforeunload', leaveChannel)

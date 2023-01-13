@@ -88,7 +88,7 @@ class Player(models.Model):
     wins = models.IntegerField(default=0)
     draws = models.IntegerField(default=0)
     losses = models.IntegerField(default=0)
-    favorite_move = models.CharField(max_length=10, choices=Game.GAME_MOVE_CHOICES, null=True)
+    favorite_move = models.CharField(max_length=10, choices=GAME_MOVE_CHOICES, null=True)
 
     def __str__(self):
         return self.user.username
@@ -99,8 +99,8 @@ class Player(models.Model):
 
 class Result(models.Model):
     player = models.ForeignKey(Player, on_delete=models.CASCADE)
-    game = models.ForeignKey(Game, on_delete=models.CASCADE)
-    result = models.CharField(max_length=10, choices=Game.GAME_RESULT_CHOICES)
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='results')
+    result = models.CharField(max_length=10, choices=GAME_RESULT_CHOICES)
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -110,7 +110,8 @@ class Result(models.Model):
 @receiver(post_save, sender=User)
 def create_player(sender, instance, created, **kwargs):
     if created:
-        Player.objects.create(user=instance)
+        player = Player.objects.create(user=instance)
+        print(player.pk, player._state.db)
 
 
 post_save.connect(create_player, sender=User)
