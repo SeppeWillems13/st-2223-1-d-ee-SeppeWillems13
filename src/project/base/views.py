@@ -5,11 +5,12 @@ from django import forms
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.core.files.storage import FileSystemStorage
 from django.core.paginator import Paginator
 from django.core.validators import EmailValidator
 from django.db.models import Q
 from django.forms import Form
-from django.http import HttpResponse, Http404, StreamingHttpResponse
+from django.http import HttpResponse, Http404, StreamingHttpResponse, JsonResponse
 from django.shortcuts import redirect, get_object_or_404
 from django.shortcuts import render
 from django.urls import reverse
@@ -99,16 +100,6 @@ def room(request, pk):
         _room = Room.objects.get(pk=pk)
     except Room.DoesNotExist:
         return room_not_found(request, pk)
-
-    # if the room is offline only the host can access it otherwise redirect to home
-    if not _room.online and request.user != _room.host:
-        return room_not_found(request, pk)
-    # if the room is online but has more than 2 players redirect to home
-    if _room.online and _room.players.count() > 2:
-        return room_not_found(request, pk)
-
-    if request.user.is_authenticated:
-        add_player_to_room(_room, request)
 
     # Define the template name
     template_name = 'base/room.html'
@@ -298,35 +289,6 @@ def playerDetailsPage(request, pk):
 
     return render(request, 'base/player_details.html', {'player': player})
 
-
-def stream(request):
-    print(request)
-
-
-def video_feed(request):
-    return StreamingHttpResponse(stream(request), content_type='multipart/x-mixed-replace; boundary=frame')
-
-
-class VideoConsumer(AsyncWebsocketConsumer):
-    async def connect(self):
-        await self.accept()
-
-    async def disconnect(self, close_code):
-        pass
-
-    async def receive(self, text_data):
-        text_data_json = json.loads(text_data)
-        message = text_data_json['message']
-
-        # Send message to WebSocket
-        await self.send(text_data=json.dumps({
-            'message': message
-        }))
-
-    async def send_video(self, bytes_data):
-        await self.send(bytes_data=bytes_data)
-
-
 @login_required(login_url='login')
 def leave_room(request, room_code):
     if request.method == 'POST':
@@ -341,3 +303,16 @@ def leave_room(request, room_code):
         return redirect('home')
     else:
         return redirect('home')
+
+
+def test_hand(request):
+    if request.GET.get('hand'):
+        hand = request.GET.get('hand')
+        hand = hand.split(',')
+        hand = [int(i) for i in hand]
+        hand.sort()
+        print(hand)
+        return HttpResponse(hand)
+    else:
+        return HttpResponse('No hand')
+

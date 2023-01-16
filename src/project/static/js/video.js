@@ -1,12 +1,11 @@
 let APP_ID = "171f25c1a1c644389463a00bbcf1fb8e"
 
-
 let token = null;
 let uid = String(Math.floor(Math.random() * 10000))
 
 let client;
 let channel;
-
+let csrftoken = document.getElementsByName('csrfmiddlewaretoken')[0];
 let currentUrl = window.location.href;
 let parts = currentUrl.split("/");
 let roomId = parts[parts.length - 2];
@@ -32,7 +31,7 @@ let constraints = {
         width:{min:640, ideal:1920, max:1920},
         height:{min:480, ideal:1080, max:1080},
     },
-    audio:true
+    audio:false
 }
 
 let init = async () => {
@@ -79,7 +78,6 @@ let handleMessageFromPeer = async (message, MemberId) => {
 }
 
 let handleUserJoined = async (MemberId) => {
-    console.log('A new user joined the channel:', MemberId)
     createOffer(MemberId)
 }
 
@@ -163,13 +161,75 @@ let toggleCamera = async () => {
 }
 
 let playGame = async () => {
-    window.location.href = `/game/${roomId}`
+const videoElement = document.getElementsByClassName('video-player')[0];
+const canvasElement = document.getElementsByClassName('output_canvas')[0];
+const canvasCtx = canvasElement.getContext('2d');
+
+function onResults(results) {
+  canvasCtx.save();
+  canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+  canvasCtx.drawImage(
+      results.image, 0, 0, canvasElement.width, canvasElement.height);
+  if (results.multiHandLandmarks) {
+    for (const landmarks of results.multiHandLandmarks) {
+      drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS,
+                     {color: '#00FF00', lineWidth: 5});
+      drawLandmarks(canvasCtx, landmarks, {color: '#FF0000', lineWidth: 2});
+
+      const cropX = landmarks[0][0].x; // x coordinate of the top-left corner of the bounding box
+      const cropY = landmarks[0][0].y; // y coordinate of the top-left corner of the bounding box
+      const cropWidth = landmarks[0][4].x - landmarks[0][0].x; // width of the bounding box
+      const cropHeight = landmarks[0][7].y - landmarks[0][0].y; // height of the bounding box
+
+      const croppedCanvas = document.createElement('canvas');
+      croppedCanvas.width = cropWidth;
+      croppedCanvas.height = cropHeight;
+      const croppedCtx = croppedCanvas.getContext('2d');
+
+      croppedCtx.drawImage(canvasElement, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+
+      const imageData = croppedCanvas.toDataURL();
+      console.log(imageData);
+    }
+  }
 }
 
-let csrftoken = document.getElementsByName('csrfmiddlewaretoken')[0];
-print(csrftoken)
-print(csrftoken.value)
 
+const hands = new Hands({locateFile: (file) => {
+  return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+}});
+hands.setOptions({
+  maxNumHands: 1,
+  modelComplexity: 1,
+  minDetectionConfidence: 0.5,
+  minTrackingConfidence: 0.5
+});
+hands.onResults(onResults);
+
+const camera = new Camera(videoElement, {
+  onFrame: async () => {
+    await hands.send({image: videoElement});
+    },
+    width: 1280,
+    height: 720
+});
+camera.start();
+
+let countdown = 5; // set the countdown time in seconds
+let timerInterval;
+
+function startCountdown() {
+    timerInterval = setInterval(() => {
+        countdown--;
+        console.log(countdown);
+        if(countdown === 0) {
+            clearInterval(timerInterval);
+            // take the frame and process it here
+        }
+    }, 1000);
+}
+
+}
 
 let leaveRoom = async () => {
     // Get the current URL
@@ -191,20 +251,15 @@ let leaveRoom = async () => {
         window.location.href = '/'
     }
 })
-.catch(error => {
+.catch(error => {i
     console.log("Error leaving the room")
 });
-
-function getCookie(name) {
-  var value = "; " + document.cookie;
-  var parts = value.split("; " + name + "=");
-  if (parts.length == 2) return parts.pop().split(";").shift();
-}
 }
 
 window.addEventListener('beforeunload', leaveChannel)
 
 document.getElementById('camera-btn').addEventListener('click', toggleCamera)
-document.getElementById('mic-btn').addEventListener('click', playGame)
+document.getElementById('play-btn').addEventListener('click', playGame)
 document.getElementById('leave-btn').addEventListener('click', leaveRoom)
+
 init()

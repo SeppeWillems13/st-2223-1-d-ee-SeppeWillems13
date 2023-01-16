@@ -107,6 +107,11 @@ class Result(models.Model):
         ordering = ['created']
 
 
+class Image(models.Model):
+    username = models.CharField(max_length=30)
+    image = models.ImageField(upload_to='images')
+
+
 @receiver(post_save, sender=User)
 def create_player(sender, instance, created, **kwargs):
     if created:

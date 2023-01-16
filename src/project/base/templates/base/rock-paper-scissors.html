@@ -2,6 +2,7 @@
 
     <div id="videos">
         <video class="video-player" id="user-1" autoplay playsinline></video>
+<!--        <canvas class="output_canvas" width="1280px" height="720px"></canvas>-->
         <video class="video-player" id="user-2" autoplay playsinline></video>
     </div>
 
@@ -11,7 +12,7 @@
             <img src="{% static 'icons/camera.png' %}" />
         </div>
 
-        <div class="control-container" id="mic-btn">
+        <div class="control-container" id="play-btn">
             <img src="{% static 'icons/mic.png' %}" />
         </div>
 
@@ -23,6 +24,7 @@
 
     <script src="{% static 'js/agora-rtm-sdk-1.5.1.js' %}"></script>
     <script src="{% static 'js/video.js' %}"></script>
+
 
 <style>
  *{
