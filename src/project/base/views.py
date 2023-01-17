@@ -316,7 +316,9 @@ def start_game_offline(request, room_id):
             room = Room.objects.get(code=room_id)
             game = Game.objects.create(room=room, user=request.user, best_of=best_of)
             game.save()
-            game_dict = model_to_dict(game, fields=['id', 'user', 'room', 'game_move', 'game_status', 'result', 'last_move', 'best_of'])
+            game_dict = model_to_dict(game,
+                                      fields=['id', 'user', 'room', 'game_move', 'game_status', 'result', 'last_move',
+                                              'best_of'])
             print(game_dict)
             return JsonResponse({'success': True, 'message': 'Game started', 'game': game_dict, 'game_id': game.id})
         except Room.DoesNotExist:
@@ -325,23 +327,9 @@ def start_game_offline(request, room_id):
         return JsonResponse({'success': False, 'message': 'Invalid request method'})
 
 
-def process_video(video):
-    video_path = video.temporary_file_path()
-    # read the video using OpenCV
-    cap = cv2.VideoCapture(video_path)
-
-    # process the video frame by frame
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
-
-        # apply your hand detection algorithm here
-
-    # release the video capture object
-    cap.release()
-    prediction = 'rock'
-    # return the prediction
+def process_image(image):
+    print(image)
+    prediction = "rock"
     return prediction
 
 
@@ -364,14 +352,14 @@ def game_logic(prediction, computer_prediction):
         return 'invalid move'
 
 
-def play_game(request,game_id):
+def play_game(request, game_id):
     print(game_id)
     if request.method == 'POST':
-        video = request.FILES.get('video')
-        if video is None:
+        screenshot = request.FILES.get('screenshot')
+        if screenshot is None:
             return JsonResponse({'success': False, 'message': 'No video passed in the request'})
         # Process the video using your hand detection library
-        prediction = process_video(video)
+        prediction = process_image(screenshot)
         computer_prediction = random.choice(['rock', 'paper', 'scissors'])
         result = game_logic(prediction, computer_prediction)
         return JsonResponse({'success': True, 'result': result})

@@ -3,6 +3,7 @@
 <form method="POST" enctype="multipart/form-data">
     <div id="videos">
         <video class="video-player" id="user-1" autoplay playsinline></video>
+        <canvas class="output_canvas" width="1280px" height="720px"></canvas>
         <canvas class="video-player" id="computer" autoplay playsinline></canvas>
     </div>
     <div id="controls">
@@ -85,96 +86,63 @@ let toggleCamera = async () => {
     }
 }
 
-// Get the video stream from the user's camera
-navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-    .then(function (stream) {
-        // Display the video stream on the video element
-        document.querySelector('#user-1').srcObject = stream;
-            mediaRecorder.onstop = function () {
-                // Create a new file with the video data
-                let videoFile = new File([videoBlob], 'video.webm', {
-                    type: 'video/webm'
-                });
+let playGame = async () => {
+    const videoElement = document.getElementsByClassName('video-player')[0];
+    let screenshotSent = false;
 
-                // Append the file to the file input element
-                let videoInput = document.querySelector('#video-input');
-                videoInput.files = videoFile;
-                // Submit the form
-                document.querySelector('form').submit();
-            };
-
-            // Stop recording the video after 5 seconds
-            setTimeout(function () {
-                mediaRecorder.stop();
-            }, 5000);
-        })
-    .catch(function (error) {
-        console.log(error);
-    });
-
-let startGame = async () => {
-    console.log(bestOf)
-    //send a request to the server to start the game
-    let response = await fetch('/start_game_offline/' + roomId, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrftoken
-        },
-        body: JSON.stringify({
-            bestOf: bestOf
-        })
-    });
-    let data = await response.json();
-    if (data.success) {
-        console.log("Game started successfully");
-        play_button.style.display = 'block'
-        start_button.style.display = 'none'
-        game = data.game;
-        game_id = data.game_id;
-        console.log(data);
-    } else {
-        console.log("Error starting game: " + data.message);
+    function countDown(count) {
+        if (count === 0) {
+            takeScreenshot();
+        } else {
+            console.log(count);
+            setTimeout(() => {
+                countDown(count - 1);
+            }, 1000);
+        }
     }
+
+    function takeScreenshot() {
+        const canvasElement = document.createElement('canvas');
+        canvasElement.width = videoElement.videoWidth;
+        canvasElement.height = videoElement.videoHeight;
+        const canvasCtx = canvasElement.getContext('2d');
+        canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+        const imgData = canvasElement.toDataURL('image/jpeg', 0.5);
+        if (!screenshotSent) {
+            // Send the image to the server for processing
+            fetch('/play_game/' + game_id + '/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({
+                    screenshot: imgData,
+                })
+            })
+            .then(response => {
+                console.log(response)
+            })
+            .catch(error => {
+                console.log(error)
+            });
+            screenshotSent = true;
+        }
+    }
+
+    countDown(3);
+
+    const camera = new Camera(videoElement, {
+        onFrame: async () => {},
+        width: 1280,
+        height: 720
+    });
+    camera.start();
 }
 
-let playGame = async () => {
-event.preventDefault();
-// Get the video track from the stream
-let videoTrack = stream.getVideoTracks()[0];
 
-// Create a new MediaRecorder object to record the video
-let mediaRecorder = new MediaRecorder(videoTrack);
 
-// Start recording the video
-mediaRecorder.start();
 
-// Create a new Blob to store the video data
-let videoBlob;
-
-mediaRecorder.ondataavailable = function (event) {
-    videoBlob = event.data;
-
-    let videoTrack = localStream.getTracks().find(track => track.kind === 'video')
-    let video_file = new Blob([videoTrack], { type: 'video/webm' });
-    let formData = new FormData();
-    formData.append('video', video_file);
-    console.log(video_file);
-    let response = fetch('/play_game/' + game_id + '/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrftoken
-        },
-        body: formData
-    });
-    let data = response.json();
-    if (data.success) {
-        console.log("Prediction received: " + data.result);
-    } else {
-        console.log("Error: " + data.message);
-    }
-}}
 
 let leaveRoom = async () => {
     // Make an HTTP request to the view function 'leave_room' in views.py
