@@ -21,6 +21,8 @@ urlpatterns = [
     path('players/', views.playersPage, name="players"),
     path('activity/', views.activityPage, name="activity"),
 
-    path('test_hand/', views.test_hand, name='test_hand'),
+    path('start_game_offline/<str:room_id>', views.start_game_offline, name='start_game_offline'),
+    path('play_game/<str:game_id>/', views.play_game, name='play_game'),
+
 
 ]

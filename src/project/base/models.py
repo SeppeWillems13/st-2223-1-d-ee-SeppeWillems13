@@ -69,9 +69,10 @@ class Game(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
     game_move = models.CharField(max_length=10, choices=GAME_MOVE_CHOICES)
-    game_status = models.CharField(max_length=10, choices=GAME_STATUS_CHOICES, default='ongoing')
+    game_status = models.CharField(max_length=10, choices=GAME_STATUS_CHOICES, default=ONGOING)
     result = models.CharField(max_length=10, choices=GAME_RESULT_CHOICES, null=True)
     last_move = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    best_of = models.IntegerField()
     updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
 

@@ -1,6 +1,6 @@
 from django.forms import ModelForm
 from django.contrib.auth.forms import UserCreationForm
-from .models import Room, User
+from .models import Room, User, Game
 from django import forms
 
 
@@ -21,6 +21,11 @@ class RoomForm(ModelForm):
             'name': forms.TextInput(attrs={'required': 'true'}),
         }
 
+
+class GameForm(forms.ModelForm):
+    class Meta:
+        model = Game
+        fields = ['best_of']
 
 class UserForm(ModelForm):
     class Meta:

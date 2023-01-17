@@ -1,16 +1,16 @@
 import json
+from random import random
 
-from channels.generic.websocket import AsyncWebsocketConsumer
+import cv2
 from django import forms
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.core.files.storage import FileSystemStorage
 from django.core.paginator import Paginator
 from django.core.validators import EmailValidator
 from django.db.models import Q
-from django.forms import Form
-from django.http import HttpResponse, Http404, StreamingHttpResponse, JsonResponse
+from django.forms import Form, model_to_dict
+from django.http import HttpResponse, Http404, JsonResponse
 from django.shortcuts import redirect, get_object_or_404
 from django.shortcuts import render
 from django.urls import reverse
@@ -289,6 +289,7 @@ def playerDetailsPage(request, pk):
 
     return render(request, 'base/player_details.html', {'player': player})
 
+
 @login_required(login_url='login')
 def leave_room(request, room_code):
     if request.method == 'POST':
@@ -305,14 +306,74 @@ def leave_room(request, room_code):
         return redirect('home')
 
 
-def test_hand(request):
-    if request.GET.get('hand'):
-        hand = request.GET.get('hand')
-        hand = hand.split(',')
-        hand = [int(i) for i in hand]
-        hand.sort()
-        print(hand)
-        return HttpResponse(hand)
+@login_required(login_url='login')
+def start_game_offline(request, room_id):
+    if request.method == 'POST':
+        try:
+            best_of = json.loads(request.body)['bestOf']
+            if best_of is '':
+                best_of = 3
+            room = Room.objects.get(code=room_id)
+            game = Game.objects.create(room=room, user=request.user, best_of=best_of)
+            game.save()
+            game_dict = model_to_dict(game, fields=['id', 'user', 'room', 'game_move', 'game_status', 'result', 'last_move', 'best_of'])
+            print(game_dict)
+            return JsonResponse({'success': True, 'message': 'Game started', 'game': game_dict, 'game_id': game.id})
+        except Room.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Invalid room code'})
     else:
-        return HttpResponse('No hand')
+        return JsonResponse({'success': False, 'message': 'Invalid request method'})
 
+
+def process_video(video):
+    video_path = video.temporary_file_path()
+    # read the video using OpenCV
+    cap = cv2.VideoCapture(video_path)
+
+    # process the video frame by frame
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        # apply your hand detection algorithm here
+
+    # release the video capture object
+    cap.release()
+    prediction = 'rock'
+    # return the prediction
+    return prediction
+
+
+def game_logic(prediction, computer_prediction):
+    if prediction == computer_prediction:
+        return 'draw'
+    elif prediction == 'rock' and computer_prediction == 'scissors':
+        return 'you win'
+    elif prediction == 'rock' and computer_prediction == 'paper':
+        return 'you lose'
+    elif prediction == 'paper' and computer_prediction == 'rock':
+        return 'you win'
+    elif prediction == 'paper' and computer_prediction == 'scissors':
+        return 'you lose'
+    elif prediction == 'scissors' and computer_prediction == 'paper':
+        return 'you win'
+    elif prediction == 'scissors' and computer_prediction == 'rock':
+        return 'you lose'
+    else:
+        return 'invalid move'
+
+
+def play_game(request,game_id):
+    print(game_id)
+    if request.method == 'POST':
+        video = request.FILES.get('video')
+        if video is None:
+            return JsonResponse({'success': False, 'message': 'No video passed in the request'})
+        # Process the video using your hand detection library
+        prediction = process_video(video)
+        computer_prediction = random.choice(['rock', 'paper', 'scissors'])
+        result = game_logic(prediction, computer_prediction)
+        return JsonResponse({'success': True, 'result': result})
+    else:
+        return JsonResponse({'success': False, 'message': 'Invalid request method'})
