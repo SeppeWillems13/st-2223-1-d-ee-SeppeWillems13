@@ -3,18 +3,14 @@ import numpy as np
 
 
 class ImageProcessor:
-    def __init__(self, detector, img_size, offset):
-        self.detector = detector
-        self.img_size = img_size
-        self.offset = offset
+    def __init__(self):
+        self.img_size = 300
 
-    def process_image(self, img, hand):
-        # Crop the image based on the bounding box of the detected hand
-        x, y, w, h = hand['bbox']
-        img_crop = img[y - self.offset:y + h + self.offset, x - self.offset:x + w + self.offset]
+    def process_image(self, img):
+        #TODO crop the image to the bounding box of the hand
 
         # Convert the image to grayscale
-        img_crop = cv2.cvtColor(img_crop, cv2.COLOR_BGR2GRAY)
+        img_crop = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
         # Apply histogram equalization to enhance the contrast
         img_crop = cv2.equalizeHist(img_crop)
@@ -49,8 +45,5 @@ class ImageProcessor:
         # Add a third dimension to the resized image to match the shape of the white image
         img_resize = np.expand_dims(img_crop, axis=2)
 
-        # Create an empty white image of size 300x300
-        img_white = np.ones((self.img_size, self.img_size, 3), np.uint8) * 255
-
-        return img_white, img_resize
+        return img_resize
 

@@ -1,7 +1,8 @@
-from django.forms import ModelForm
-from django.contrib.auth.forms import UserCreationForm
-from .models import Room, User, Game
 from django import forms
+from django.contrib.auth.forms import UserCreationForm
+from django.forms import ModelForm
+
+from .models import Room, User, Game
 
 
 class MyUserCreationForm(UserCreationForm):

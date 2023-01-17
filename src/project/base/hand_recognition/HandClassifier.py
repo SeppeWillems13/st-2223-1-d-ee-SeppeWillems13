@@ -1,8 +1,8 @@
-import cv2
+import os
+
 import numpy as np
 from PIL import Image, ImageOps
 from keras.models import load_model
-import os
 
 
 class HandClassifier:
@@ -41,4 +41,4 @@ class HandClassifier:
         class_name = self.labels[index]
         confidence_score = prediction[0][index]
 
-        return class_name
+        return class_name, confidence_score

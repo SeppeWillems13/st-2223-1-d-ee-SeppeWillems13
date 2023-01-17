@@ -1,7 +1,9 @@
+import base64
 import json
-from random import random
-
+import math
 import cv2
+import mediapipe as mp
+import numpy as np
 from django import forms
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
@@ -15,6 +17,7 @@ from django.shortcuts import redirect, get_object_or_404
 from django.shortcuts import render
 from django.urls import reverse
 
+from .hand_recognition import HandClassifier, ImageProcessor
 from .forms import UserForm, MyUserCreationForm, RoomForm
 from .models import Room, Game, User, Player
 
@@ -311,7 +314,7 @@ def start_game_offline(request, room_id):
     if request.method == 'POST':
         try:
             best_of = json.loads(request.body)['bestOf']
-            if best_of is '':
+            if best_of == '':
                 best_of = 3
             room = Room.objects.get(code=room_id)
             game = Game.objects.create(room=room, user=request.user, best_of=best_of)
@@ -328,9 +331,8 @@ def start_game_offline(request, room_id):
 
 
 def process_image(image):
-    print(image)
-    prediction = "rock"
-    return prediction
+    classifier = HandClassifier.HandClassifier()
+    return classifier.classify(image)
 
 
 def game_logic(prediction, computer_prediction):
@@ -353,15 +355,80 @@ def game_logic(prediction, computer_prediction):
 
 
 def play_game(request, game_id):
-    print(game_id)
-    if request.method == 'POST':
-        screenshot = request.FILES.get('screenshot')
-        if screenshot is None:
-            return JsonResponse({'success': False, 'message': 'No video passed in the request'})
-        # Process the video using your hand detection library
-        prediction = process_image(screenshot)
-        computer_prediction = random.choice(['rock', 'paper', 'scissors'])
-        result = game_logic(prediction, computer_prediction)
-        return JsonResponse({'success': True, 'result': result})
-    else:
-        return JsonResponse({'success': False, 'message': 'Invalid request method'})
+    DESIRED_HEIGHT = 480
+    DESIRED_WIDTH = 480
+
+    def resize_and_show(image):
+        h, w = image.shape[:2]
+        if h < w:
+            img = cv2.resize(image, (DESIRED_WIDTH, math.floor(h / (w / DESIRED_WIDTH))))
+        else:
+            img = cv2.resize(image, (math.floor(w / (h / DESIRED_HEIGHT)), DESIRED_HEIGHT))
+
+    screenshot = json.loads(request.body)['screenshot']
+    # Decode the base64 encoded image data
+    screenshot = base64.b64decode(screenshot.split(',')[1])
+
+    # Convert the raw image data to a numpy array
+    screenshot = np.frombuffer(screenshot, dtype=np.uint8)
+
+    # Decode the image and convert it to a format that OpenCV can process
+    screenshot = cv2.imdecode(screenshot, cv2.IMREAD_COLOR)
+
+    # convert
+    resize_and_show(screenshot)
+
+    mp_hands = mp.solutions.hands
+    mp_drawing = mp.solutions.drawing_utils
+    mp_drawing_styles = mp.solutions.drawing_styles
+
+    # Run MediaPipe Hands.
+    with mp_hands.Hands(
+            static_image_mode=True,
+            max_num_hands=1,
+            min_detection_confidence=0.7) as hands:
+
+        # Convert the BGR image to RGB, flip the image around y-axis for correct
+        # handedness output and process it with MediaPipe Hands.
+        results = hands.process(cv2.flip(cv2.cvtColor(screenshot, cv2.COLOR_BGR2RGB), 1))
+
+        if not results.multi_hand_landmarks:
+            return JsonResponse({'success': False, 'message': 'No hands detected'})
+        else:
+            # Draw hand landmarks of each hand.
+            image_height, image_width, _ = screenshot.shape
+            annotated_image = cv2.flip(screenshot.copy(), 1)
+            for hand_landmarks in results.multi_hand_landmarks:
+                # Print index finger tip coordinates.
+                print(
+                    f'Index finger tip coordinate: (',
+                    f'{hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].x * image_width}, '
+                    f'{hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].y * image_height})'
+                )
+                mp_drawing.draw_landmarks(
+                    annotated_image,
+                    hand_landmarks,
+                    mp_hands.HAND_CONNECTIONS,
+                    mp_drawing_styles.get_default_hand_landmarks_style(),
+                    mp_drawing_styles.get_default_hand_connections_style())
+        # resize_and_show(cv2.flip(annotated_image, 1))
+
+        min_x, min_y, max_x, max_y = 1.0, 1.0, 0.0, 0.0
+        for landmark in hand_landmarks.landmark:
+            min_x, min_y = min(landmark.x, min_x), min(landmark.y, min_y)
+            max_x, max_y = max(landmark.x, max_x), max(landmark.y, max_y)
+        offset_x, offset_y = 0.05, 0.05
+        min_x, min_y = int(min_x * image_width - offset_x * image_width), int(
+            min_y * image_height - offset_y * image_height)
+        max_x, max_y = int(max_x * image_width + offset_x * image_width), int(
+            max_y * image_height + offset_y * image_height)
+        hand_image = annotated_image[min_y:max_y, min_x:max_x]
+        resize_and_show(cv2.flip(hand_image, 1))
+
+        # Show cropped image
+        # cv2.imshow("cropped_image", hand_image)
+        # cv2.waitKey(0)
+        # send the image to the model
+        class_name, confidence_score = process_image(annotated_image)
+
+        return JsonResponse({'status': 'success', 'class_name': class_name, 'confidence_score': str(confidence_score)})

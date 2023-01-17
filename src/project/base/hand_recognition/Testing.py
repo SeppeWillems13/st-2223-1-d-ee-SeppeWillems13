@@ -1,7 +1,7 @@
-import cv2
-from cvzone.HandTrackingModule import HandDetector
 import math
 
+import cv2
+from cvzone.HandTrackingModule import HandDetector
 from rps.base.HandClassifier import HandClassifier
 from rps.base.ImageProcessor import ImageProcessor
 

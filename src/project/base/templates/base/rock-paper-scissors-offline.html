@@ -3,8 +3,6 @@
 <form method="POST" enctype="multipart/form-data">
     <div id="videos">
         <video class="video-player" id="user-1" autoplay playsinline></video>
-        <canvas class="output_canvas" width="1280px" height="720px"></canvas>
-        <canvas class="video-player" id="computer" autoplay playsinline></canvas>
     </div>
     <div id="controls">
         <div class="control-container" id="camera-btn">
@@ -86,6 +84,32 @@ let toggleCamera = async () => {
     }
 }
 
+let startGame = async () => {
+    console.log(bestOf)
+    //send a request to the server to start the game
+    let response = await fetch('/start_game_offline/' + roomId, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({
+            bestOf: bestOf
+        })
+    });
+    let data = await response.json();
+    if (data.success) {
+        console.log("Game started successfully");
+        play_button.style.display = 'block'
+        start_button.style.display = 'none'
+        game = data.game;
+        game_id = data.game_id;
+        console.log(data);
+    } else {
+        console.log("Error starting game: " + data.message);
+    }
+}
+
 let playGame = async () => {
     const videoElement = document.getElementsByClassName('video-player')[0];
     let screenshotSent = false;
@@ -101,7 +125,7 @@ let playGame = async () => {
         }
     }
 
-    function takeScreenshot() {
+        function takeScreenshot() {
         const canvasElement = document.createElement('canvas');
         canvasElement.width = videoElement.videoWidth;
         canvasElement.height = videoElement.videoHeight;
@@ -109,7 +133,6 @@ let playGame = async () => {
         canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
         const imgData = canvasElement.toDataURL('image/jpeg', 0.5);
         if (!screenshotSent) {
-            // Send the image to the server for processing
             fetch('/play_game/' + game_id + '/', {
                 method: 'POST',
                 headers: {
@@ -117,18 +140,37 @@ let playGame = async () => {
                     'X-CSRFToken': csrftoken
                 },
                 body: JSON.stringify({
-                    screenshot: imgData,
+                    screenshot: imgData
                 })
             })
-            .then(response => {
-                console.log(response)
-            })
-            .catch(error => {
-                console.log(error)
-            });
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    if (data.success) {
+                        console.log("Screenshot sent successfully");
+                        screenshotSent = true;
+                        console.log(data);
+                        let winner = data.winner;
+                        if (winner === "user") {
+                            alert("You won!");
+                        } else if (winner === "computer") {
+                            alert("You lost!");
+                        } else {
+                            alert("It's a tie!");
+                        }
+                    } else {
+                        console.log("Error sending screenshot: " + data.message);
+                    }
+                }).catch(error => {
+                    console.error(
+                        'There has been a problem with your fetch operation:',
+                        error
+                    );
+                });
             screenshotSent = true;
         }
     }
+
 
     countDown(3);
 
@@ -198,8 +240,6 @@ init()
 .video-player{
     background-color: black;
     width: 100%;
-    height: 100%;
-    object-fit: cover;
 }
 
 #user-2{

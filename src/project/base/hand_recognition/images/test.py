@@ -1,10 +1,10 @@
 """Import all dependencies."""
-import os
 import argparse
-import numpy as np
 import math
-import time
+import os
+
 import cv2
+import numpy as np
 from cvzone.HandTrackingModule import HandDetector
 
 
