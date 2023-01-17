@@ -107,8 +107,7 @@ navigator.mediaDevices.getUserMedia({ video: true, audio: false })
             setTimeout(function () {
                 mediaRecorder.stop();
             }, 5000);
-        });
-    })
+        })
     .catch(function (error) {
         console.log(error);
     });
@@ -161,7 +160,7 @@ mediaRecorder.ondataavailable = function (event) {
     let formData = new FormData();
     formData.append('video', video_file);
     console.log(video_file);
-    let response = await fetch('/play_game/' + game_id + '/', {
+    let response = fetch('/play_game/' + game_id + '/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -169,14 +168,13 @@ mediaRecorder.ondataavailable = function (event) {
         },
         body: formData
     });
-    let data = await response.json();
+    let data = response.json();
     if (data.success) {
         console.log("Prediction received: " + data.result);
     } else {
         console.log("Error: " + data.message);
     }
-}
-
+}}
 
 let leaveRoom = async () => {
     // Make an HTTP request to the view function 'leave_room' in views.py
@@ -213,6 +211,8 @@ camera_button.addEventListener('click', leaveRoom)
 init()
 
 </script>
+
+
 <style>
  *{
     margin: 0;
