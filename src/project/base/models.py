@@ -98,6 +98,9 @@ class Game(models.Model):
         self.score = json.dumps(score)
         if score['player1'] >= (self.best_of / 2 + 1) or score['player2'] >= (self.best_of / 2 + 1):
             self.game_status = 'ENDED'
+            # Create a new Result object when the game is ended
+            player_result = 'WIN' if score['player1'] >= (self.best_of / 2 + 1) else 'LOSS'
+            Result.objects.create(player=self.user, game=self, result=player_result)
         else:
             self.game_status = 'ONGOING'
         self.game_move = class_name
