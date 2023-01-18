@@ -1,6 +1,7 @@
 import base64
 import json
 import math
+
 import cv2
 import mediapipe as mp
 import numpy as np
@@ -17,8 +18,8 @@ from django.shortcuts import redirect, get_object_or_404
 from django.shortcuts import render
 from django.urls import reverse
 
-from .hand_recognition import HandClassifier, ImageProcessor
 from .forms import UserForm, MyUserCreationForm, RoomForm
+from .hand_recognition import HandClassifier
 from .models import Room, Game, User, Player
 
 
@@ -320,7 +321,7 @@ def start_game_offline(request, room_id):
             game = Game.objects.create(room=room, user=request.user, best_of=best_of)
             game.save()
             game_dict = model_to_dict(game,
-                                      fields=['id', 'user', 'room', 'game_move', 'game_status', 'result', 'last_move',
+                                      fields=['id', 'user', 'room', 'player_move', 'game_status', 'result', 'last_move',
                                               'best_of'])
             print(game_dict)
             return JsonResponse({'success': True, 'message': 'Game started', 'game': game_dict, 'game_id': game.id})
@@ -335,104 +336,91 @@ def process_image(image):
     return classifier.classify(image)
 
 
-def game_logic(prediction, computer_prediction):
-    if prediction == computer_prediction:
-        return 'draw'
-    elif prediction == 'rock' and computer_prediction == 'scissors':
-        return 'you win'
-    elif prediction == 'rock' and computer_prediction == 'paper':
-        return 'you lose'
-    elif prediction == 'paper' and computer_prediction == 'rock':
-        return 'you win'
-    elif prediction == 'paper' and computer_prediction == 'scissors':
-        return 'you lose'
-    elif prediction == 'scissors' and computer_prediction == 'paper':
-        return 'you win'
-    elif prediction == 'scissors' and computer_prediction == 'rock':
-        return 'you lose'
-    else:
-        return 'invalid move'
-
-
 def play_game(request, game_id):
-    screenshot = json.loads(request.body)['screenshot']
-    # Decode the base64 encoded image data
-    screenshot = base64.b64decode(screenshot.split(',')[1])
+    game = Game.objects.get(id=game_id)
+    if game.game_status != 'Completed':
+        screenshot = json.loads(request.body)['screenshot']
 
-    # Convert the raw image data to a numpy array
-    screenshot = np.frombuffer(screenshot, dtype=np.uint8)
+        def resize_and_show(image):
+            # Decode the base64 encoded image data
+            screenshot = base64.b64decode(image.split(',')[1])
+            # Convert the raw image data to a numpy array
+            screenshot = np.frombuffer(screenshot, dtype=np.uint8)
+            # Decode the image and convert it to a format that OpenCV can process
+            screenshot = cv2.imdecode(screenshot, cv2.IMREAD_COLOR)
+            # call a hand classifier class here that gets the hand
+            DESIRED_HEIGHT = 224
+            DESIRED_WIDTH = 224
 
-    # Decode the image and convert it to a format that OpenCV can process
-    screenshot = cv2.imdecode(screenshot, cv2.IMREAD_COLOR)
-
-    # call a hand classifier class here that gets the hand
-    DESIRED_HEIGHT = 224
-    DESIRED_WIDTH = 224
-
-    def resize_and_show(image):
-        h, w = image.shape[:2]
-        if h < w:
-            img = cv2.resize(image, (DESIRED_WIDTH, math.floor(h / (w / DESIRED_WIDTH))))
-        else:
-            img = cv2.resize(image, (math.floor(w / (h / DESIRED_HEIGHT)), DESIRED_HEIGHT))
-
-    resize_and_show(screenshot)
-
-    mp_hands = mp.solutions.hands
-    mp_drawing = mp.solutions.drawing_utils
-    mp_drawing_styles = mp.solutions.drawing_styles
-
-    # Run MediaPipe Hands.
-    with mp_hands.Hands(
-            static_image_mode=True,
-            max_num_hands=1,
-            min_detection_confidence=0.7) as hands:
-
-        # Convert the BGR image to RGB, flip the image around y-axis for correct
-        # handedness output and process it with MediaPipe Hands.
-        results = hands.process(cv2.flip(cv2.cvtColor(screenshot, cv2.COLOR_BGR2RGB), 1))
-
-        if not results.multi_hand_landmarks:
-            class_name, confidence_score = process_image(screenshot)
-            if confidence_score < 0.5:
-                return JsonResponse(
-                    {'success': False, 'message': 'Invalid move', 'confidence_score': str(confidence_score),
-                     'hands_detected': False})
+            h, w = screenshot.shape[:2]
+            if h < w:
+                img = cv2.resize(screenshot, (DESIRED_WIDTH, math.floor(h / (w / DESIRED_WIDTH))))
             else:
+                img = cv2.resize(screenshot, (math.floor(w / (h / DESIRED_HEIGHT)), DESIRED_HEIGHT))
+
+            return img
+
+        resized_image = resize_and_show(screenshot)
+
+        mp_hands = mp.solutions.hands
+        mp_drawing = mp.solutions.drawing_utils
+        mp_drawing_styles = mp.solutions.drawing_styles
+
+        # Run MediaPipe Hands.
+        with mp_hands.Hands(
+                static_image_mode=True,
+                max_num_hands=1,
+                min_detection_confidence=0.7) as hands:
+
+            # Convert the BGR image to RGB, flip the image around y-axis for correct
+            # handedness output and process it with MediaPipe Hands.
+            results = hands.process(cv2.flip(cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB), 1))
+
+            if not results.multi_hand_landmarks:
+                class_name, confidence_score = process_image(resized_image)
+                if confidence_score < 0.5:
+                    return JsonResponse(
+                        {'success': False, 'message': 'Invalid move', 'confidence_score': str(confidence_score),
+                         'hands_detected': False})
+                else:
+                    return JsonResponse(
+                        {'status': 'success', 'class_name': class_name, 'confidence_score': str(confidence_score),
+                         'hands_detected': False})
+            else:
+                # Draw hand landmarks of each hand.
+                image_height, image_width, _ = resized_image.shape
+                annotated_image = cv2.flip(resized_image.copy(), 1)
+                for hand_landmarks in results.multi_hand_landmarks:
+                    mp_drawing.draw_landmarks(
+                        annotated_image,
+                        hand_landmarks,
+                        mp_hands.HAND_CONNECTIONS,
+                        mp_drawing_styles.get_default_hand_landmarks_style(),
+                        mp_drawing_styles.get_default_hand_connections_style())
+
+            hand_image = crop_handbox(annotated_image, hand_landmarks, image_height, image_width, resize_and_show)
+            class_name, confidence_score = process_image(hand_image)
+
+            # cv2.imshow('MediaPipe Hands', hand_image)
+            # folder = r"C:\Users\seppe\PycharmProjects\st-2223-1-d-ee-SeppeWillems13\src\project\base\hand_recognition\application_images"
+            # cv2.imwrite(f"{folder}\{confidence_score}.jpg", hand_image)
+            # cv2.waitKey(0)
+
+            # if confidence_score is less than 0.5, return error
+            if confidence_score < 0.5:
+                return JsonResponse({'success': False, 'message': 'Invalid move', 'confidence_score': str(confidence_score),
+                                     'hands_detected': True})
+            else:
+                game.play_offline_game(class_name)
+                # get the computer move and the result
+                computer_move = game.opponent_move
+                result = game.result
+
                 return JsonResponse(
                     {'status': 'success', 'class_name': class_name, 'confidence_score': str(confidence_score),
-                     'hands_detected': False})
-        else:
-            # Draw hand landmarks of each hand.
-            image_height, image_width, _ = screenshot.shape
-            annotated_image = cv2.flip(screenshot.copy(), 1)
-            for hand_landmarks in results.multi_hand_landmarks:
-                mp_drawing.draw_landmarks(
-                    annotated_image,
-                    hand_landmarks,
-                    mp_hands.HAND_CONNECTIONS,
-                    mp_drawing_styles.get_default_hand_landmarks_style(),
-                    mp_drawing_styles.get_default_hand_connections_style())
-
-        hand_image = crop_handbox(annotated_image, hand_landmarks, image_height, image_width, resize_and_show)
-        class_name, confidence_score = process_image(hand_image)
-
-        # cv2.imshow('MediaPipe Hands', hand_image)
-        # folder = r"C:\Users\seppe\PycharmProjects\st-2223-1-d-ee-SeppeWillems13\src\project\base\hand_recognition\application_images"
-        # cv2.imwrite(f"{folder}\{confidence_score}.jpg", hand_image)
-        # cv2.waitKey(0)
-
-        # if confidence_score is less than 0.5, return error
-        if confidence_score < 0.5:
-            return JsonResponse({'success': False, 'message': 'Invalid move', 'confidence_score': str(confidence_score),
-                                 'hands_detected': True})
-        else:
-            #here we are certain the user has played a valid move so we can start the game logic and return the result and update the game and user stats
-            game = Game.objects.get(id=game_id)
-            game.play_offline_game(class_name)
-            return JsonResponse(
-                {'status': 'success', 'class_name': class_name, 'confidence_score': str(confidence_score),
-                 'hands_detected': True})
+                     'hands_detected': True, 'computer_move': computer_move, 'result': result})
+    else:
+        return JsonResponse({'success': False, 'message': 'Game is already finished'})
 
 
 def crop_handbox(annotated_image, hand_landmarks, image_height, image_width, resize_and_show):

@@ -1,6 +1,5 @@
 import datetime
 import math
-import random
 import sys
 
 import cv2

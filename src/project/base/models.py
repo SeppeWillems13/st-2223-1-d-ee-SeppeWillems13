@@ -42,9 +42,7 @@ GAME_RESULT_CHOICES = (
 class User(AbstractUser):
     name = models.CharField(max_length=200, null=True)
     email = models.EmailField(unique=True, null=True)
-    bio = models.TextField(null=True)
     avatar = models.ImageField(null=True, default="avatar.svg")
-    REQUIRED_FIELDS = []
 
     class Meta:
         ordering = ['username']
@@ -72,38 +70,44 @@ class Game(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
-    game_move = models.CharField(max_length=10, choices=GAME_MOVE_CHOICES)
+    player_move = models.CharField(max_length=10, choices=GAME_MOVE_CHOICES)
+    opponent_move = models.CharField(max_length=10, choices=GAME_MOVE_CHOICES)
     game_status = models.CharField(max_length=10, choices=GAME_STATUS_CHOICES, default=ONGOING)
     score = models.TextField(default='{"player1": 0, "player2": 0}')
     result = models.CharField(max_length=10, choices=GAME_RESULT_CHOICES, null=True)
-    last_move = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
     best_of = models.IntegerField()
     updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
 
+    def get_computer_move(self):
+        self.opponent_move = random.choice(list(dict(GAME_MOVE_CHOICES).keys()))
+
     def play_offline_game(self, class_name):
-        class_name = dict(GAME_MOVE_CHOICES)[class_name]
-        computer_move = random.choice(list(dict(GAME_MOVE_CHOICES).keys()))
+        self.player_move = dict(GAME_MOVE_CHOICES)[class_name]
+        self.get_computer_move()
         score = json.loads(self.score)
-        if class_name == computer_move:
-            self.result = 'TIE'
-        elif (class_name == 'rock' and computer_move == 'scissors') or (
-                class_name == 'scissors' and computer_move == 'paper') or (
-                class_name == 'paper' and computer_move == 'rock'):
-            self.result = 'WIN'
+        if class_name == self.opponent_move:
+            self.result = TIE
+            print('TIE')
+        elif (class_name == ROCK and self.opponent_move == SCISSORS) or \
+                (class_name == SCISSORS and self.opponent_move == PAPER) or \
+                (class_name == PAPER and self.opponent_move == ROCK):
+            self.result = WIN
             score['player1'] += 1
+            print('WIN')
         else:
-            self.result = 'LOSS'
+            self.result = LOSE
             score['player2'] += 1
+            print('LOSS')
         self.score = json.dumps(score)
-        if score['player1'] >= (self.best_of / 2 + 1) or score['player2'] >= (self.best_of / 2 + 1):
-            self.game_status = 'ENDED'
+        if score['player1'] >= int(self.best_of / 2 + 1) or score['player2'] >= int(self.best_of / 2 + 1):
+            self.game_status = COMPLETED
             # Create a new Result object when the game is ended
             player_result = 'WIN' if score['player1'] >= (self.best_of / 2 + 1) else 'LOSS'
-            Result.objects.create(player=self.user, game=self, result=player_result)
+            player = Player.objects.get(user=self.user)
+            Result.objects.create(player=player, game=self, result=player_result)
         else:
-            self.game_status = 'ONGOING'
-        self.game_move = class_name
+            self.game_status = ONGOING
         self.updated = timezone.now()
         self.save()
 
@@ -111,7 +115,7 @@ class Game(models.Model):
         ordering = ['-updated', '-created']
 
     def __str__(self):
-        return self.game_move
+        return str(self.room) + ' - ' + str(self.user) + ' - ' + str(self.game_status)
 
 
 class Player(models.Model):

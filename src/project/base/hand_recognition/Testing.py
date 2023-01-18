@@ -1,12 +1,9 @@
-import mediapipe as mp
-from keras.models import load_model
-import datetime
 import math
-import sys
 
 import cv2
 import mediapipe as mp
 import numpy as np
+from keras.models import load_model
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
