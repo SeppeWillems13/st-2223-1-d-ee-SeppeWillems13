@@ -1,14 +1,14 @@
-import cv2
+import os
+
 import numpy as np
 from PIL import Image, ImageOps
 from keras.models import load_model
-import os
 
 
 class HandClassifier:
     def __init__(self):
         # Get the absolute paths to the model and labels files
-        model_path = os.path.abspath('keras/keras_model.h5')
+        model_path = os.path.abspath('keras/keras_model_second.h5')
         labels_path = os.path.abspath('keras/labels.txt')
 
         # Load the model and labels
@@ -17,23 +17,26 @@ class HandClassifier:
             self.labels = f.read().splitlines()
 
     def classify(self, image):
-        # Resize the image to a 224x224 with the same strategy as in TM2:
-        # resizing the image to be at least 224x224 and then cropping from the center
+        # Create the array of the right shape to feed into the keras model
+        # The 'length' or number of images you can put into the array is
+        # determined by the first position in the shape tuple, in this case 1.
+        data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
+
         image = Image.fromarray(image)
-        image.convert('RGB')
+
+        # resize the image to a 224x224 with the same strategy as in TM2:
+        # resizing the image to be at least 224x224 and then cropping from the center
         size = (224, 224)
         image = ImageOps.fit(image, size, Image.Resampling.LANCZOS)
-        # Turn the image into a NumPy array
+
+        # turn the image into a numpy array
         image_array = np.asarray(image)
+
         # Normalize the image
         normalized_image_array = (image_array.astype(np.float32) / 127.0) - 1
-        # Add the image to the data array
-        data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
+
+        # Load the image into the array
         data[0] = normalized_image_array
-        # Use the model to make a prediction
-        prediction = self.model.predict(data)
-        # Get the index of the most likely class
-        index = np.argmax(prediction[0])
 
         # run the inference
         prediction = self.model.predict(data)
@@ -41,4 +44,4 @@ class HandClassifier:
         class_name = self.labels[index]
         confidence_score = prediction[0][index]
 
-        return class_name
+        return class_name, confidence_score

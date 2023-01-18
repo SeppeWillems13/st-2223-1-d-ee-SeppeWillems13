@@ -1,11 +1,45 @@
-let APP_ID = "171f25c1a1c644389463a00bbcf1fb8e"
+{% load static %}
+{% csrf_token %}
+    <div id="videos">
+        <video class="video-player" id="user-1" autoplay playsinline></video>
+        <canvas class="output_canvas" width="1280px" height="720px"></canvas>
+        <video class="video-player" id="user-2" autoplay playsinline></video>
+    </div>
 
+    <div id="controls">
+
+        <div class="control-container" id="camera-btn">
+            <img src="{% static 'icons/camera.png' %}" />
+        </div>
+        <div class="control-container" id="play-btn">
+            <img src="{% static 'icons/mic.png' %}" />
+        </div>
+
+        <div class="control-container" id="leave-btn">
+            <img src="{% static 'icons/phone.png' %}" />
+        </div>
+
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <script src="{% static 'js/agora-rtm-sdk-1.5.1.js' %}"></script>
+<script>
+    let APP_ID = "171f25c1a1c644389463a00bbcf1fb8e"
 
 let token = null;
 let uid = String(Math.floor(Math.random() * 10000))
 
 let client;
 let channel;
+const csrftoken = getCookie('csrftoken');
+
+function getCookie(name) {
+  var value = "; " + document.cookie;
+  var parts = value.split("; " + name + "=");
+  if (parts.length == 2) return parts.pop().split(";").shift();
+}
 
 let currentUrl = window.location.href;
 let parts = currentUrl.split("/");
@@ -32,11 +66,11 @@ let constraints = {
         width:{min:640, ideal:1920, max:1920},
         height:{min:480, ideal:1080, max:1080},
     },
-    audio:true
+    audio:false
 }
 
 let init = async () => {
-    client = AgoraRTM.createInstance(APP_ID, { enableLogUpload: false }); // Pass your App ID here.
+    client = AgoraRTM.createInstance(APP_ID, { enableLogUpload: false });
     await client.login({uid, token})
 
     channel = client.createChannel(roomId)
@@ -50,7 +84,7 @@ let init = async () => {
     localStream = await navigator.mediaDevices.getUserMedia(constraints)
     document.getElementById('user-1').srcObject = localStream
 }
- 
+
 
 let handleUserLeft = (MemberId) => {
     document.getElementById('user-2').style.display = 'none'
@@ -79,7 +113,6 @@ let handleMessageFromPeer = async (message, MemberId) => {
 }
 
 let handleUserJoined = async (MemberId) => {
-    console.log('A new user joined the channel:', MemberId)
     createOffer(MemberId)
 }
 
@@ -163,12 +196,121 @@ let toggleCamera = async () => {
 }
 
 let playGame = async () => {
-#send the webcam stream to the server and get the response from the server and display it on the screen
+console.log("play game online")
 }
-  
+
+
+let leaveRoom = async () => {
+    // Get the current URL
+    let currentUrl = window.location.href;
+    // Split the URL to get the room code
+    let parts = currentUrl.split("/");
+    let roomCode = parts[parts.length - 1];
+
+    // Make an HTTP request to the view function 'leave_room' in views.py
+    fetch('/leave_room/' + roomCode, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken,
+        },
+    }).then(response => {
+    if(response.status === 200){
+        console.log("Left the room successfully")
+        window.location.href = '/'
+    }
+})
+.catch(error => {i
+    console.log("Error leaving the room")
+});
+}
+
 window.addEventListener('beforeunload', leaveChannel)
 
 document.getElementById('camera-btn').addEventListener('click', toggleCamera)
-document.getElementById('mic-btn').addEventListener('click', playGame)
+document.getElementById('play-btn').addEventListener('click', playGame)
+document.getElementById('leave-btn').addEventListener('click', leaveRoom)
 
 init()
+
+</script>
+<style>
+ *{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+#videos{
+    display: grid;
+    grid-template-columns: 1fr;
+    height: 100vh;
+    overflow:hidden;
+}
+
+.video-player{
+    background-color: black;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+#user-2{
+    display: none;
+}
+
+.smallFrame{
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    height: 170px;
+    width: 300px;
+    border-radius: 5px;
+    border:2px solid #b366f9;
+    -webkit-box-shadow: 3px 3px 15px -1px rgba(0,0,0,0.77);
+    box-shadow: 3px 3px 15px -1px rgba(0,0,0,0.77);
+    z-index: 999;
+}
+
+
+#controls{
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform:translateX(-50%);
+    display: flex;
+    gap: 1em;
+}
+
+
+.control-container{
+  background-color: rgb(179, 102, 249, .9);
+  padding: 20px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+
+.control-container img{
+    height: 30px;
+    width: 30px;
+}
+
+#leave-btn{
+    background-color: rgb(255,80,80, 1);
+}
+
+@media screen and (max-width:600px) {
+        .smallFrame{
+            height: 80px;
+            width: 120px;
+        }
+
+        .control-container img{
+            height: 20px;
+            width: 20px;
+        }
+}
+</style>

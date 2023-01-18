@@ -35,9 +35,8 @@
           <h2>Game Rooms</h2>
           <p>{{room_count}} Rooms available</p>
         </div>
-
-
-        <a class="btn btn--main" href="{% url 'join-room' %}">
+<!--TODO hide button if game room count = 0-->
+        <a class="btn btn--main" href="{% url 'join-room' %}" >
           <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
             <title>add</title>
             <path
@@ -46,7 +45,6 @@
           </svg>
           Join Room
         </a>
-
         <a class="btn btn--main" href="{% url 'create-room' %}">
           <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
             <title>add</title>

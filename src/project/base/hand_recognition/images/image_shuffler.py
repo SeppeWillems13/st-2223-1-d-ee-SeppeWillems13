@@ -71,7 +71,7 @@ class image_shuffler:
 # Set the directories for the training and test sets
 train_dir = 'train'
 test_dir = 'test'
-image_dir = '../image_data'
+image_dir = '../new_image_data'
 
 # Create an instance of the DataSplitter class
 splitter = image_shuffler(image_dir, train_dir, test_dir)

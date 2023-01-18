@@ -1,18 +1,54 @@
-from django.db import models
-from django.contrib.auth.models import AbstractUser
+import json
+import random
 import uuid
+
+from django.contrib.auth.models import AbstractUser
+from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
+
+# Choices for the game_move field
+ROCK = 'Rock'
+PAPER = 'Paper'
+SCISSORS = 'Scissors'
+GAME_MOVE_CHOICES = (
+    (ROCK, 'Rock'),
+    (PAPER, 'Paper'),
+    (SCISSORS, 'Scissors'),
+)
+
+# Choices for the game_status field
+ONGOING = 'Ongoing'
+COMPLETED = 'Completed'
+ABANDONED = 'Abandoned'
+GAME_STATUS_CHOICES = (
+    (ONGOING, 'Ongoing'),
+    (COMPLETED, 'Completed'),
+    (ABANDONED, 'Abandoned'),
+)
+
+# Choices for the result field
+WIN = 'Win'
+LOSE = 'Lose'
+TIE = 'Tie'
+GAME_RESULT_CHOICES = (
+    (WIN, 'Win'),
+    (LOSE, 'Lose'),
+    (TIE, 'Tie'),
+)
 
 
 class User(AbstractUser):
     name = models.CharField(max_length=200, null=True)
     email = models.EmailField(unique=True, null=True)
-    bio = models.TextField(null=True)
-
     avatar = models.ImageField(null=True, default="avatar.svg")
 
-    REQUIRED_FIELDS = []
+    class Meta:
+        ordering = ['username']
+
+    def __str__(self):
+        return self.username
 
 
 class Room(models.Model):
@@ -30,81 +66,93 @@ class Room(models.Model):
         return self.name
 
 
-class PlayerManager(models.Manager):
-    def create_player(self, user, room, is_host=False):
-        if not User.objects.filter(pk=user.pk).exists():
-            raise ValueError('User does not exist')
-        if room.players.count() >= 2 and not room.online:
-            raise ValueError('Room is full')
-        player = self.create(user=user, room=room, is_host=is_host)
-        room.players.add(player)
-        return player
-
-
 class Game(models.Model):
-    # Choices for the game_move field
-    ROCK = 'Rock'
-    PAPER = 'Paper'
-    SCISSORS = 'Scissors'
-    GAME_MOVE_CHOICES = (
-        (ROCK, 'Rock'),
-        (PAPER, 'Paper'),
-        (SCISSORS, 'Scissors'),
-    )
-
-    # Choices for the game_status field
-    ONGOING = 'Ongoing'
-    COMPLETED = 'Completed'
-    ABANDONED = 'Abandoned'
-    GAME_STATUS_CHOICES = (
-        (ONGOING, 'Ongoing'),
-        (COMPLETED, 'Completed'),
-        (ABANDONED, 'Abandoned'),
-    )
-
-    # Choices for the result field
-    WIN = 'Win'
-    LOSE = 'Lose'
-    TIE = 'Tie'
-    GAME_RESULT_CHOICES = (
-        (WIN, 'Win'),
-        (LOSE, 'Lose'),
-        (TIE, 'Tie'),
-    )
-
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
-    game_move = models.CharField(max_length=10, choices=GAME_MOVE_CHOICES)
-    game_status = models.CharField(max_length=10, choices=GAME_STATUS_CHOICES, default='ongoing')
+    player_move = models.CharField(max_length=10, choices=GAME_MOVE_CHOICES)
+    opponent_move = models.CharField(max_length=10, choices=GAME_MOVE_CHOICES)
+    game_status = models.CharField(max_length=10, choices=GAME_STATUS_CHOICES, default=ONGOING)
+    score = models.TextField(default='{"player1": 0, "player2": 0}')
     result = models.CharField(max_length=10, choices=GAME_RESULT_CHOICES, null=True)
-    last_move = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    best_of = models.IntegerField()
     updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
+
+    def get_computer_move(self):
+        self.opponent_move = random.choice(list(dict(GAME_MOVE_CHOICES).keys()))
+
+    def play_offline_game(self, class_name):
+        self.player_move = dict(GAME_MOVE_CHOICES)[class_name]
+        self.get_computer_move()
+        score = json.loads(self.score)
+        if class_name == self.opponent_move:
+            self.result = TIE
+            print('TIE')
+        elif (class_name == ROCK and self.opponent_move == SCISSORS) or \
+                (class_name == SCISSORS and self.opponent_move == PAPER) or \
+                (class_name == PAPER and self.opponent_move == ROCK):
+            self.result = WIN
+            score['player1'] += 1
+            print('WIN')
+        else:
+            self.result = LOSE
+            score['player2'] += 1
+            print('LOSS')
+        self.score = json.dumps(score)
+        if score['player1'] >= int(self.best_of / 2 + 1) or score['player2'] >= int(self.best_of / 2 + 1):
+            self.game_status = COMPLETED
+            # Create a new Result object when the game is ended
+            player_result = 'WIN' if score['player1'] >= (self.best_of / 2 + 1) else 'LOSS'
+            player = Player.objects.get(user=self.user)
+            Result.objects.create(player=player, game=self, result=player_result)
+        else:
+            self.game_status = ONGOING
+        self.updated = timezone.now()
+        self.save()
 
     class Meta:
         ordering = ['-updated', '-created']
 
     def __str__(self):
-        return self.game_move
+        return str(self.room) + ' - ' + str(self.user) + ' - ' + str(self.game_status)
 
 
 class Player(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='players', null=True, blank=True)
-    is_host = models.BooleanField(default=False)
-
-    class Meta:
-        unique_together = ('user', 'room',)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+    room = models.ManyToManyField(Room, related_name='players', blank=True)
+    wins = models.IntegerField(default=0)
+    draws = models.IntegerField(default=0)
+    losses = models.IntegerField(default=0)
+    favorite_move = models.CharField(max_length=10, choices=GAME_MOVE_CHOICES, null=True)
 
     def __str__(self):
         return self.user.username
+
+    class Meta:
+        ordering = ['user__username']
+
+
+class Result(models.Model):
+    player = models.ForeignKey(Player, on_delete=models.CASCADE)
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='results')
+    result = models.CharField(max_length=10, choices=GAME_RESULT_CHOICES)
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created']
+
+
+class Image(models.Model):
+    username = models.CharField(max_length=30)
+    image = models.ImageField(upload_to='images')
 
 
 @receiver(post_save, sender=User)
 def create_player(sender, instance, created, **kwargs):
     if created:
-        Player.objects.create(user=instance)
+        player = Player.objects.create(user=instance)
+        print(player.pk, player._state.db)
 
 
 post_save.connect(create_player, sender=User)
