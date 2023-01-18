@@ -3,6 +3,9 @@
 <form method="POST" enctype="multipart/form-data">
     <div id="videos">
         <video class="video-player" id="user-1" autoplay playsinline></video>
+        <canvas id="canvas-user-1"></canvas>
+        <video class="video-player" id="user-2" autoplay playsinline></video>
+        <canvas id="canvas-user-2"></canvas>
     </div>
     <div id="controls">
         <div class="control-container" id="camera-btn">
@@ -111,8 +114,21 @@ let startGame = async () => {
 }
 
 let playGame = async () => {
-    const videoElement = document.getElementsByClassName('video-player')[0];
-    let screenshotSent = false;
+let video = document.getElementById('user-1');
+let computer = document.getElementById('user-2');
+let canvas = document.getElementById('canvas-user-1');
+let computercanvas = document.getElementById('canvas-user-2');
+let ctx = canvas.getContext('2d');
+const videoElement = document.getElementsByClassName('video-player')[0];
+computer.style.display = 'block'
+video.classList.add('smallFrame')
+canvas.classList.add('smallFrame')
+
+//set text on the ctx canvas
+ctx.font = '48px serif';
+ctx.fillStyle = 'white';;
+
+let screenshotSent = false;
 
     function countDown(count) {
         if (count === 0) {
@@ -147,6 +163,7 @@ let playGame = async () => {
                 .then(response => response.json())
                 .then(data => {
                     console.log(data);
+                    ctx.fillText(data.class_name, 10, 50)
                     if(!data.hands_detected){
                         alert("No hands detected. Please try again.")
                         screenshotSent = false;
@@ -234,7 +251,6 @@ init()
 }
 
 .video-player{
-    background-color: black;
     width: 100%;
 }
 

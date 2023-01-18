@@ -2,7 +2,6 @@
 {% csrf_token %}
     <div id="videos">
         <video class="video-player" id="user-1" autoplay playsinline></video>
-        <canvas class="output_canvas" width="1280px" height="720px"></canvas>
         <video class="video-player" id="user-2" autoplay playsinline></video>
     </div>
 
@@ -26,7 +25,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     <script src="{% static 'js/agora-rtm-sdk-1.5.1.js' %}"></script>
 <script>
-    let APP_ID = "171f25c1a1c644389463a00bbcf1fb8e"
+let APP_ID = "171f25c1a1c644389463a00bbcf1fb8e"
 
 let token = null;
 let uid = String(Math.floor(Math.random() * 10000))
