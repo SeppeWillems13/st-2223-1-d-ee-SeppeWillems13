@@ -393,25 +393,18 @@ def play_game(request, game_id):
         results = hands.process(cv2.flip(cv2.cvtColor(screenshot, cv2.COLOR_BGR2RGB), 1))
 
         if not results.multi_hand_landmarks:
-            return JsonResponse({'success': False, 'message': 'No hands detected'})
+            return JsonResponse({'success': False, 'message': 'No hands detected', 'hands_detected': False})
         else:
             # Draw hand landmarks of each hand.
             image_height, image_width, _ = screenshot.shape
             annotated_image = cv2.flip(screenshot.copy(), 1)
             for hand_landmarks in results.multi_hand_landmarks:
-                # Print index finger tip coordinates.
-                print(
-                    f'Index finger tip coordinate: (',
-                    f'{hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].x * image_width}, '
-                    f'{hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP].y * image_height})'
-                )
                 mp_drawing.draw_landmarks(
                     annotated_image,
                     hand_landmarks,
                     mp_hands.HAND_CONNECTIONS,
                     mp_drawing_styles.get_default_hand_landmarks_style(),
                     mp_drawing_styles.get_default_hand_connections_style())
-        # resize_and_show(cv2.flip(annotated_image, 1))
 
         min_x, min_y, max_x, max_y = 1.0, 1.0, 0.0, 0.0
         for landmark in hand_landmarks.landmark:
@@ -425,10 +418,12 @@ def play_game(request, game_id):
         hand_image = annotated_image[min_y:max_y, min_x:max_x]
         resize_and_show(cv2.flip(hand_image, 1))
 
-        # Show cropped image
-        # cv2.imshow("cropped_image", hand_image)
+        # cv2.imshow('MediaPipe Hands', hand_image)
         # cv2.waitKey(0)
-        # send the image to the model
         class_name, confidence_score = process_image(annotated_image)
 
-        return JsonResponse({'status': 'success', 'class_name': class_name, 'confidence_score': str(confidence_score)})
+        #if confidence_score is less than 0.7, return error
+        if confidence_score < 0.7:
+            return JsonResponse({'success': False, 'message': 'Invalid move', 'confidence_score': str(confidence_score) ,'hands_detected': True})
+        else:
+            return JsonResponse({'status': 'success', 'class_name': class_name, 'confidence_score': str(confidence_score) ,'hands_detected': True})

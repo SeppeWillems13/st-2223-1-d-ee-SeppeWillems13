@@ -1,52 +1,43 @@
-import math
+from keras.models import load_model
+from PIL import Image, ImageOps
+import numpy as np
 
-import cv2
-from cvzone.HandTrackingModule import HandDetector
-from rps.base.HandClassifier import HandClassifier
-from rps.base.ImageProcessor import ImageProcessor
+# Disable scientific notation for clarity
+np.set_printoptions(suppress=True)
 
-cap = cv2.VideoCapture(0)
-detector = HandDetector(maxHands=1)
-classifier = HandClassifier()
+# Load the model
+model = load_model('keras_Model_second.h5', compile=False)
 
-offset = 20
-img_size = 300
+# Load the labels
+class_names = open('labels.txt', 'r').readlines()
 
-labels = ["paper", "rock", "scissors"]
+# Create the array of the right shape to feed into the keras model
+# The 'length' or number of images you can put into the array is
+# determined by the first position in the shape tuple, in this case 1.
+data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
 
-while True:
-    processor = ImageProcessor(detector, img_size, offset)
-    success, img = cap.read()
-    hands = detector.findHands(img, draw=False)
+# Replace this with the path to your image
+image = Image.open('<IMAGE_PATH>').convert('RGB')
 
-    if hands:
-        hand = hands[0]
-        x, y, w, h = hand['bbox']
-        img_white, img_resize = processor.process_image(img, hand)
-        # Calculate the aspect ratio of the cropped image
-        aspect_ratio = h / w
-        # If the aspect ratio is greater than 1, add the resized image to the white image
-        # with a gap at the top and bottom to center the image
-        if aspect_ratio > 1:
-            h_gap = math.ceil((img_size - img_resize.shape[0]) / 2)
-            img_white[h_gap:h_gap + img_resize.shape[0], :] = img_resize
+#resize the image to a 224x224 with the same strategy as in TM2:
+#resizing the image to be at least 224x224 and then cropping from the center
+size = (224, 224)
+image = ImageOps.fit(image, size, Image.Resampling.LANCZOS)
 
-        # If the aspect ratio is less than or equal to 1, add the resized image to the white image
-        # with a gap at the left and right to center the image
-        else:
-            w_gap = math.ceil((img_size - img_resize.shape[1]) / 2)
-            img_white[:, w_gap:w_gap + img_resize.shape[1]] = img_resize
+#turn the image into a numpy array
+image_array = np.asarray(image)
 
-        # improve with probability!!!!
-        prediction = classifier.classify(img_white)
+# Normalize the image
+normalized_image_array = (image_array.astype(np.float32) / 127.0) - 1
 
-        cv2.rectangle(img, (x - offset, y - offset - 50),
-                      (x - offset + 90, y - offset - 50 + 50), (255, 0, 255), cv2.FILLED)
-        cv2.putText(img, prediction, (x, y - 26), cv2.FONT_HERSHEY_COMPLEX, 1.7, (255, 255, 255), 2)
-        cv2.rectangle(img, (x - offset, y - offset),
-                      (x + w + offset, y + h + offset), (255, 0, 255), 4)
+# Load the image into the array
+data[0] = normalized_image_array
 
-        cv2.imshow("ImageWhite", img_white)
+# run the inference
+prediction = model.predict(data)
+index = np.argmax(prediction)
+class_name = class_names[index]
+confidence_score = prediction[0][index]
 
-    cv2.imshow("Image", img)
-    cv2.waitKey(1)
+print('Class:', class_name, end='')
+print('Confidence score:', confidence_score)

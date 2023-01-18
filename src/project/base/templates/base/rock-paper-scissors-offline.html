@@ -126,6 +126,7 @@ let playGame = async () => {
     }
 
         function takeScreenshot() {
+        fail_count = 0;
         const canvasElement = document.createElement('canvas');
         canvasElement.width = videoElement.videoWidth;
         canvasElement.height = videoElement.videoHeight;
@@ -146,20 +147,16 @@ let playGame = async () => {
                 .then(response => response.json())
                 .then(data => {
                     console.log(data);
-                    if (data.success) {
-                        console.log("Screenshot sent successfully");
+                    if(!data.hands_detected){
+                        alert("No hands detected. Please try again.")
+                        screenshotSent = false;
+                        fail_count++;
+                    }else if(data.message === "Invalid move"){
+                        alert("Invalid move. Please try again.")
+                        screenshotSent = false;
+                        fail_count++;
+                    }else{
                         screenshotSent = true;
-                        console.log(data);
-                        let winner = data.winner;
-                        if (winner === "user") {
-                            alert("You won!");
-                        } else if (winner === "computer") {
-                            alert("You lost!");
-                        } else {
-                            alert("It's a tie!");
-                        }
-                    } else {
-                        console.log("Error sending screenshot: " + data.message);
                     }
                 }).catch(error => {
                     console.error(
@@ -167,7 +164,6 @@ let playGame = async () => {
                         error
                     );
                 });
-            screenshotSent = true;
         }
     }
 
