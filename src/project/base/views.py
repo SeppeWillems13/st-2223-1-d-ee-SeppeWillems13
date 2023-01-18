@@ -355,16 +355,6 @@ def game_logic(prediction, computer_prediction):
 
 
 def play_game(request, game_id):
-    DESIRED_HEIGHT = 480
-    DESIRED_WIDTH = 480
-
-    def resize_and_show(image):
-        h, w = image.shape[:2]
-        if h < w:
-            img = cv2.resize(image, (DESIRED_WIDTH, math.floor(h / (w / DESIRED_WIDTH))))
-        else:
-            img = cv2.resize(image, (math.floor(w / (h / DESIRED_HEIGHT)), DESIRED_HEIGHT))
-
     screenshot = json.loads(request.body)['screenshot']
     # Decode the base64 encoded image data
     screenshot = base64.b64decode(screenshot.split(',')[1])
@@ -375,7 +365,17 @@ def play_game(request, game_id):
     # Decode the image and convert it to a format that OpenCV can process
     screenshot = cv2.imdecode(screenshot, cv2.IMREAD_COLOR)
 
-    # convert
+    # call a hand classifier class here that gets the hand
+    DESIRED_HEIGHT = 224
+    DESIRED_WIDTH = 224
+
+    def resize_and_show(image):
+        h, w = image.shape[:2]
+        if h < w:
+            img = cv2.resize(image, (DESIRED_WIDTH, math.floor(h / (w / DESIRED_WIDTH))))
+        else:
+            img = cv2.resize(image, (math.floor(w / (h / DESIRED_HEIGHT)), DESIRED_HEIGHT))
+
     resize_and_show(screenshot)
 
     mp_hands = mp.solutions.hands
@@ -393,7 +393,15 @@ def play_game(request, game_id):
         results = hands.process(cv2.flip(cv2.cvtColor(screenshot, cv2.COLOR_BGR2RGB), 1))
 
         if not results.multi_hand_landmarks:
-            return JsonResponse({'success': False, 'message': 'No hands detected', 'hands_detected': False})
+            class_name, confidence_score = process_image(screenshot)
+            if confidence_score < 0.5:
+                return JsonResponse(
+                    {'success': False, 'message': 'Invalid move', 'confidence_score': str(confidence_score),
+                     'hands_detected': False})
+            else:
+                return JsonResponse(
+                    {'status': 'success', 'class_name': class_name, 'confidence_score': str(confidence_score),
+                     'hands_detected': False})
         else:
             # Draw hand landmarks of each hand.
             image_height, image_width, _ = screenshot.shape
@@ -406,24 +414,36 @@ def play_game(request, game_id):
                     mp_drawing_styles.get_default_hand_landmarks_style(),
                     mp_drawing_styles.get_default_hand_connections_style())
 
-        min_x, min_y, max_x, max_y = 1.0, 1.0, 0.0, 0.0
-        for landmark in hand_landmarks.landmark:
-            min_x, min_y = min(landmark.x, min_x), min(landmark.y, min_y)
-            max_x, max_y = max(landmark.x, max_x), max(landmark.y, max_y)
-        offset_x, offset_y = 0.05, 0.05
-        min_x, min_y = int(min_x * image_width - offset_x * image_width), int(
-            min_y * image_height - offset_y * image_height)
-        max_x, max_y = int(max_x * image_width + offset_x * image_width), int(
-            max_y * image_height + offset_y * image_height)
-        hand_image = annotated_image[min_y:max_y, min_x:max_x]
-        resize_and_show(cv2.flip(hand_image, 1))
+        hand_image = crop_handbox(annotated_image, hand_landmarks, image_height, image_width, resize_and_show)
+        class_name, confidence_score = process_image(hand_image)
 
         # cv2.imshow('MediaPipe Hands', hand_image)
+        # folder = r"C:\Users\seppe\PycharmProjects\st-2223-1-d-ee-SeppeWillems13\src\project\base\hand_recognition\application_images"
+        # cv2.imwrite(f"{folder}\{confidence_score}.jpg", hand_image)
         # cv2.waitKey(0)
-        class_name, confidence_score = process_image(annotated_image)
 
-        #if confidence_score is less than 0.7, return error
-        if confidence_score < 0.7:
-            return JsonResponse({'success': False, 'message': 'Invalid move', 'confidence_score': str(confidence_score) ,'hands_detected': True})
+        # if confidence_score is less than 0.5, return error
+        if confidence_score < 0.5:
+            return JsonResponse({'success': False, 'message': 'Invalid move', 'confidence_score': str(confidence_score),
+                                 'hands_detected': True})
         else:
-            return JsonResponse({'status': 'success', 'class_name': class_name, 'confidence_score': str(confidence_score) ,'hands_detected': True})
+            #here we are certain the user has played a valid move so we can start the game logic and return the result and update the game and user stats
+            game = Game.objects.get(id=game_id)
+            game.play_offline_game(class_name)
+            return JsonResponse(
+                {'status': 'success', 'class_name': class_name, 'confidence_score': str(confidence_score),
+                 'hands_detected': True})
+
+
+def crop_handbox(annotated_image, hand_landmarks, image_height, image_width, resize_and_show):
+    min_x, min_y, max_x, max_y = 1.0, 1.0, 0.0, 0.0
+    for landmark in hand_landmarks.landmark:
+        min_x, min_y = min(landmark.x, min_x), min(landmark.y, min_y)
+        max_x, max_y = max(landmark.x, max_x), max(landmark.y, max_y)
+    offset_x, offset_y = 0.05, 0.05
+    min_x, min_y = int(min_x * image_width - offset_x * image_width), int(
+        min_y * image_height - offset_y * image_height)
+    max_x, max_y = int(max_x * image_width + offset_x * image_width), int(
+        max_y * image_height + offset_y * image_height)
+    hand_image = annotated_image[min_y:max_y, min_x:max_x]
+    return hand_image

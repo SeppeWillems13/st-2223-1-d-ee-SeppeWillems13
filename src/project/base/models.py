@@ -1,9 +1,12 @@
+import json
+import random
 import uuid
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
 
 # Choices for the game_move field
 ROCK = 'Rock'
@@ -71,11 +74,35 @@ class Game(models.Model):
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
     game_move = models.CharField(max_length=10, choices=GAME_MOVE_CHOICES)
     game_status = models.CharField(max_length=10, choices=GAME_STATUS_CHOICES, default=ONGOING)
+    score = models.TextField(default='{"player1": 0, "player2": 0}')
     result = models.CharField(max_length=10, choices=GAME_RESULT_CHOICES, null=True)
     last_move = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
     best_of = models.IntegerField()
     updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
+
+    def play_offline_game(self, class_name):
+        class_name = dict(GAME_MOVE_CHOICES)[class_name]
+        computer_move = random.choice(list(dict(GAME_MOVE_CHOICES).keys()))
+        score = json.loads(self.score)
+        if class_name == computer_move:
+            self.result = 'TIE'
+        elif (class_name == 'rock' and computer_move == 'scissors') or (
+                class_name == 'scissors' and computer_move == 'paper') or (
+                class_name == 'paper' and computer_move == 'rock'):
+            self.result = 'WIN'
+            score['player1'] += 1
+        else:
+            self.result = 'LOSS'
+            score['player2'] += 1
+        self.score = json.dumps(score)
+        if score['player1'] >= (self.best_of / 2 + 1) or score['player2'] >= (self.best_of / 2 + 1):
+            self.game_status = 'ENDED'
+        else:
+            self.game_status = 'ONGOING'
+        self.game_move = class_name
+        self.updated = timezone.now()
+        self.save()
 
     class Meta:
         ordering = ['-updated', '-created']
