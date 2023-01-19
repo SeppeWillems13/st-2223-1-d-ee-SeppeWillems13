@@ -164,7 +164,7 @@ let screenshotSent = false;
         canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
         const imgData = canvasElement.toDataURL('image/jpeg', 0.5);
         if (!screenshotSent) {
-            fetch('/play_game/' + game_id + '/', {
+            fetch('/play_round/' + game_id + '/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -178,7 +178,7 @@ let screenshotSent = false;
                 .then(data => {
                     console.log(data);
                     if(data.hands_detected){
-                    let score = JSON.parse(data.score);
+                    let score = data.score;
                     let player1Score = document.getElementById("score-player-1");
                     let player2Score = document.getElementById("score-player-2");
                     player1Score.textContent = score.player1;

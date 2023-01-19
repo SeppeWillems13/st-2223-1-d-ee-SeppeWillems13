@@ -23,6 +23,6 @@ urlpatterns = [
     path('activity/', views.activityPage, name="activity"),
 
     path('start_game_offline/<str:room_id>', views.start_game_offline, name='start_game_offline'),
-    path('play_game/<str:game_id>/', views.play_game, name='play_game'),
+    path('play_round/<str:game_id>/', views.play_round, name='play_round'),
 
 ]

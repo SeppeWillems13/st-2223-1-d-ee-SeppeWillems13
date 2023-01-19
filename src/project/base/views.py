@@ -20,7 +20,7 @@ from django.urls import reverse
 
 from .forms import UserForm, MyUserCreationForm, RoomForm
 from .hand_recognition import HandClassifier
-from .models import Room, Game, User, Player
+from .models import Room, Game, User, Player, Round
 
 
 # loginform validator
@@ -310,23 +310,25 @@ def leave_room(request, room_code):
         return redirect('home')
 
 
+from django.shortcuts import get_object_or_404
+from django.http import JsonResponse
+
+
 @login_required(login_url='login')
 def start_game_offline(request, room_id):
     if request.method == 'POST':
-        try:
-            best_of = json.loads(request.body)['bestOf']
-            if best_of == '':
-                best_of = 3
-            room = Room.objects.get(code=room_id)
-            game = Game.objects.create(room=room, user=request.user, best_of=best_of)
-            game.save()
-            game_dict = model_to_dict(game,
-                                      fields=['id', 'user', 'room', 'player_move', 'game_status', 'result', 'last_move',
-                                              'best_of'])
-            print(game_dict)
-            return JsonResponse({'success': True, 'message': 'Game started', 'game': game_dict, 'game_id': game.id})
-        except Room.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'Invalid room code'})
+        room = get_object_or_404(Room, code=room_id)
+        best_of = json.loads(request.body).get('bestOf', 3)
+        game, created = Game.objects.get_or_create(room=room, user=request.user, best_of=best_of,
+                                                   defaults={'score': {"player1": 0, "player2": 0}})
+        game.save()
+        game_dict = model_to_dict(game)
+        return JsonResponse({
+            'success': True,
+            'message': 'Game started',
+            'game': game_dict,
+            'game_id': game.id
+        })
     else:
         return JsonResponse({'success': False, 'message': 'Invalid request method'})
 
@@ -336,9 +338,9 @@ def process_image(image):
     return classifier.classify(image)
 
 
-def play_game(request, game_id):
+def play_round(request, game_id):
     game = Game.objects.get(id=game_id)
-    if game.game_status != 'Completed':
+    if request.method == 'POST':
         screenshot = json.loads(request.body)['screenshot']
 
         def resize_and_show(image):
@@ -361,8 +363,7 @@ def play_game(request, game_id):
             return img
 
         resized_image = resize_and_show(screenshot)
-        # cv2.imshow('image', resized_image)
-        # cv2.waitKey(0)
+
         mp_hands = mp.solutions.hands
         mp_drawing = mp.solutions.drawing_utils
         mp_drawing_styles = mp.solutions.drawing_styles
@@ -378,15 +379,9 @@ def play_game(request, game_id):
             results = hands.process(cv2.flip(cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB), 1))
 
             if not results.multi_hand_landmarks:
-                class_name, confidence_score = process_image(resized_image)
-                if confidence_score < 0.5:
-                    return JsonResponse(
-                        {'success': False, 'message': 'Invalid move', 'confidence_score': str(confidence_score),
-                         'hands_detected': False})
-                else:
-                    return JsonResponse(
-                        {'status': 'success', 'player_move': class_name, 'confidence_score': str(confidence_score),
-                         'hands_detected': False})
+                return JsonResponse(
+                    {'status': False, 'message': 'No hands detected', 'game_id': game_id,
+                     'game_status': game.game_status})
             else:
                 # Draw hand landmarks of each hand.
                 image_height, image_width, _ = resized_image.shape
@@ -413,14 +408,15 @@ def play_game(request, game_id):
                     {'success': False, 'player_move': class_name, 'confidence_score': str(confidence_score),
                      'hands_detected': True, 'score': game.score})
             else:
-                game.play_offline_game(class_name)
-                # get the computer move and the result
-                computer_move = game.opponent_move
-                result = game.result
+                _round = Round.objects.create(game=game)
+                _round.play_offline_round(class_name, game_id)
+                _round.save()
+                outcome = _round.outcome
+                computer_move = _round.opponent_move
 
                 return JsonResponse(
                     {'success': True, 'player_move': class_name, 'confidence_score': str(confidence_score),
-                     'hands_detected': True, 'computer_move': computer_move, 'result': result,
+                     'hands_detected': True, 'computer_move': computer_move, 'result': outcome,
                      'score': game.score, 'game_over': game.game_status == 'Completed', 'winner': game.result})
     else:
         return JsonResponse({'success': False, 'message': 'Game is already finished'})
