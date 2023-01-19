@@ -1,11 +1,22 @@
 {% load static %}
 {% csrf_token %}
+<div class="room__conversation">
+    <div>
+        <p id="score-player-1">Player 1 score: {{ game.score.player1 }}</p>
+        <p id="score-player-2">Player 2 score: {{ game.score.player2 }}</p>
+        <p id="winner-text">Winner: {{ game.winner }}</p>
+
+    </div>
+</div>
+
+
+
+<div class="threads scroll">
 <form method="POST" enctype="multipart/form-data">
     <div id="videos">
         <video class="video-player" id="user-1" autoplay playsinline></video>
-        <canvas id="canvas-user-1"></canvas>
-        <video class="video-player" id="user-2" autoplay playsinline></video>
-        <canvas id="canvas-user-2"></canvas>
+        <canvas id="canvas-user-1" >
+        </canvas>
     </div>
     <div id="controls">
         <div class="control-container" id="camera-btn">
@@ -21,15 +32,16 @@
         <div class="control-container" id="leave-btn">
             <img src="{% static 'icons/cancel.png' %}" />
         </div>
-
     </div>
 </form>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
-    <script src="{% static 'js/agora-rtm-sdk-1.5.1.js' %}"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script src="{% static 'js/agora-rtm-sdk-1.5.1.js' %}"></script>
 
 <script>
 let game;
@@ -115,19 +127,22 @@ let startGame = async () => {
 
 let playGame = async () => {
 let video = document.getElementById('user-1');
-let computer = document.getElementById('user-2');
 let canvas = document.getElementById('canvas-user-1');
-let computercanvas = document.getElementById('canvas-user-2');
-let ctx = canvas.getContext('2d');
+canvas.style.display = 'block'
+canvas.width = video.clientWidth;
+canvas.height = video.clientHeight;
+canvas.style.position = 'absolute';
+canvas.style.top = video.offsetTop + 'px';
+canvas.style.left = video.offsetLeft + 'px';
+
+let playerctx = canvas.getContext('2d');
 const videoElement = document.getElementsByClassName('video-player')[0];
-computer.style.display = 'block'
-video.classList.add('smallFrame')
-canvas.classList.add('smallFrame')
 
-//set text on the ctx canvas
-ctx.font = '48px serif';
-ctx.fillStyle = 'white';;
-
+//set text on the playerctx canvas
+playerctx.font = '48px serif';
+playerctx.fillStyle = 'white';
+//delete text from the canvas
+playerctx.clearRect(0, 0, canvas.width, canvas.height);
 let screenshotSent = false;
 
     function countDown(count) {
@@ -142,7 +157,6 @@ let screenshotSent = false;
     }
 
         function takeScreenshot() {
-        fail_count = 0;
         const canvasElement = document.createElement('canvas');
         canvasElement.width = videoElement.videoWidth;
         canvasElement.height = videoElement.videoHeight;
@@ -163,15 +177,32 @@ let screenshotSent = false;
                 .then(response => response.json())
                 .then(data => {
                     console.log(data);
-                    ctx.fillText(data.class_name, 10, 50)
+                    if(data.hands_detected){
+                    let score = JSON.parse(data.score);
+                    let player1Score = document.getElementById("score-player-1");
+                    let player2Score = document.getElementById("score-player-2");
+                    player1Score.textContent = score.player1;
+                    player2Score.textContent = score.player2;
+
+                    playerctx.fillText(data.player_move, 10, 50)
+                    playerctx.fillText(data.confidence_score, 10, 100)
+                    playerctx.fillText(data.computer_move, canvas.width - 200, 50)
+                    }
+                    if(data.game_over){
+                        let winner = data.winner;
+                        let winnerText = document.getElementById("winner-text");
+                        winnerText.textContent = "You " + winner;
+                        winnerText.style.display = 'block'
+                        play_button.style.display = 'none'
+                        start_button.style.display = 'block'
+                        canvas.style.display = 'none'
+                    }
                     if(!data.hands_detected){
                         alert("No hands detected. Please try again.")
                         screenshotSent = false;
-                        fail_count++;
                     }else if(data.message === "Invalid move"){
                         alert("Invalid move. Please try again.")
                         screenshotSent = false;
-                        fail_count++;
                     }else{
                         screenshotSent = true;
                     }
@@ -243,12 +274,17 @@ init()
     box-sizing: border-box;
 }
 
-#videos{
-    display: grid;
-    grid-template-columns: 1fr;
-    height: 100vh;
-    overflow:hidden;
+#computerPlayModal{
+   display: none;
 }
+
+
+.computerCanvas{
+   position: absolute;
+   top: 0px;
+   left: 0px;
+   }
+
 
 .video-player{
     width: 100%;
@@ -257,7 +293,9 @@ init()
 #user-2{
     display: none;
 }
-
+canvas{
+    display: none;
+}
 .smallFrame{
     position: fixed;
     top: 20px;
@@ -299,6 +337,10 @@ init()
 
 #leave-btn{
     background-color: rgb(255,80,80, 1);
+}
+
+#winner-text{
+    display: none;
 }
 
 @media screen and (max-width:600px) {

@@ -64,8 +64,7 @@ a {
 
 /*========== components ==========*/
 .container {
-  max-width: 120rem;
-  width: 90%;
+  width: 70%;
   margin: auto;
 }
 
@@ -967,7 +966,6 @@ a {
 .room__header {
   max-height: 30vh;
   overflow-y: auto;
-  position: absolute;
   width: 95%;
   background: var(--color-dark);
   z-index: 999;
@@ -1045,7 +1043,6 @@ a {
 .room__conversation {
   margin-top: 1rem;
   margin-bottom: 4rem;
-  height: 64%;
 }
 
 .threads h3 {
@@ -1058,8 +1055,6 @@ a {
   background: var(--color-bg);
   border-radius: 0.7rem;
   overflow-y: auto;
-  height: 100%;
-  margin-top: 28vh;
   padding: 0 2rem 4rem 2rem;
 }
 

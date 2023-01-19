@@ -67,15 +67,11 @@
             </a>
           </div>
         </div>
-      <div class="room__conversation">
-          <div class="threads scroll">
-            {% if room.online %}
+        {% if room.online %}
               {% include 'base/rock-paper-scissors-online.html' %}
             {% else %}
               {% include 'base/rock-paper-scissors-offline.html' %}
             {% endif %}
-          </div>
-        </div>
       </div>
     </div>
     <!-- Room End -->

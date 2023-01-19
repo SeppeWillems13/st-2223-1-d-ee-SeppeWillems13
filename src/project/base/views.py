@@ -361,8 +361,8 @@ def play_game(request, game_id):
             return img
 
         resized_image = resize_and_show(screenshot)
-        cv2.imshow('image', resized_image)
-        cv2.waitKey(0)
+        # cv2.imshow('image', resized_image)
+        # cv2.waitKey(0)
         mp_hands = mp.solutions.hands
         mp_drawing = mp.solutions.drawing_utils
         mp_drawing_styles = mp.solutions.drawing_styles
@@ -385,7 +385,7 @@ def play_game(request, game_id):
                          'hands_detected': False})
                 else:
                     return JsonResponse(
-                        {'status': 'success', 'class_name': class_name, 'confidence_score': str(confidence_score),
+                        {'status': 'success', 'player_move': class_name, 'confidence_score': str(confidence_score),
                          'hands_detected': False})
             else:
                 # Draw hand landmarks of each hand.
@@ -402,16 +402,16 @@ def play_game(request, game_id):
             hand_image = crop_handbox(annotated_image, hand_landmarks, image_height, image_width, resize_and_show)
             class_name, confidence_score = process_image(hand_image)
 
-            cv2.imshow('MediaPipe Hands', hand_image)
+            # cv2.imshow('MediaPipe Hands', hand_image)
+            # cv2.waitKey(0)
             folder = r"C:\Users\seppe\PycharmProjects\st-2223-1-d-ee-SeppeWillems13\src\project\base\hand_recognition\application_images"
             cv2.imwrite(f"{folder}\{confidence_score}.jpg", hand_image)
-            cv2.waitKey(0)
 
             # if confidence_score is less than 0.5, return error
             if confidence_score < 0.5:
                 return JsonResponse(
-                    {'success': False, 'message': 'Invalid move', 'confidence_score': str(confidence_score),
-                     'hands_detected': True})
+                    {'success': False, 'player_move': class_name, 'confidence_score': str(confidence_score),
+                     'hands_detected': True, 'score': game.score})
             else:
                 game.play_offline_game(class_name)
                 # get the computer move and the result
@@ -419,8 +419,9 @@ def play_game(request, game_id):
                 result = game.result
 
                 return JsonResponse(
-                    {'status': 'success', 'class_name': class_name, 'confidence_score': str(confidence_score),
-                     'hands_detected': True, 'computer_move': computer_move, 'result': result})
+                    {'success': True, 'player_move': class_name, 'confidence_score': str(confidence_score),
+                     'hands_detected': True, 'computer_move': computer_move, 'result': result,
+                     'score': game.score, 'game_over': game.game_status == 'Completed', 'winner': game.result})
     else:
         return JsonResponse({'success': False, 'message': 'Game is already finished'})
 
