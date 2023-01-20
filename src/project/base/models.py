@@ -82,8 +82,9 @@ class Game(models.Model):
 
     class Meta:
         ordering = ['-updated', '-created']
+
     def __str__(self):
-        return str(self.room) + ' - ' + str(self.user) + ' - ' + str(self.game_status)
+        return str(self.id) + ' - ' + str(self.room) + ' - ' + str(self.user) + ' - ' + str(self.game_status)
 
 
 class Round(models.Model):
@@ -104,44 +105,48 @@ class Round(models.Model):
 
     def play_offline_round(self, class_name, game_id):
         game = Game.objects.get(pk=game_id)
-        game.rounds_played += 1
-        self.player_move = dict(GAME_MOVE_CHOICES)[class_name]
-        self.get_computer_move()
-        if class_name == self.opponent_move:
-            self.outcome = TIE
-        elif (class_name == ROCK and self.opponent_move == SCISSORS) or \
-                (class_name == SCISSORS and self.opponent_move == PAPER) or \
-                (class_name == PAPER and self.opponent_move == ROCK):
-            self.outcome = WIN
-            game.score['player1'] += 1
+
+        if game.game_status == COMPLETED:
+            return
         else:
-            self.outcome = LOSE
-            game.score['player2'] += 1
+            game.rounds_played += 1
+            self.player_move = dict(GAME_MOVE_CHOICES)[class_name]
+            self.get_computer_move()
+            if class_name == self.opponent_move:
+                self.outcome = TIE
+            elif (class_name == ROCK and self.opponent_move == SCISSORS) or \
+                    (class_name == SCISSORS and self.opponent_move == PAPER) or \
+                    (class_name == PAPER and self.opponent_move == ROCK):
+                self.outcome = WIN
+                game.score['player1'] += 1
+            else:
+                self.outcome = LOSE
+                game.score['player2'] += 1
 
-        if game.score['player1'] == game.best_of / 2 + 0.5 or game.score['player2'] == game.best_of / 2 + 0.5:
-            player = Player.objects.get(user=game.user)
-            game.game_status = COMPLETED
-            if game.score['player1'] > game.score['player2']:
-                result = Result.objects.create(game=game, result=WIN, player=player)
-                game.result = WIN
-            elif game.score['player1'] < game.score['player2']:
-                result = Result.objects.create(game=game, result=LOSE, player=player)
-                game.result = LOSE
+            game.save()
+            self.save()
 
-            # get all rounds for this game
-            rounds = Round.objects.filter(game=game)
+            if game.score['player1'] == game.best_of / 2 + 0.5 or game.score['player2'] == game.best_of / 2 + 0.5:
+                player = Player.objects.get(user=game.user)
+                game.game_status = COMPLETED
+                rounds = Round.objects.filter(game=game)
+                player_moves = [round.player_move for round in rounds]
+                opponent_moves = [round.opponent_move for round in rounds]
+                if game.score['player1'] > game.score['player2']:
+                    result = Result.objects.create(game=game, result=WIN, player=player, player_moves=player_moves,
+                                                   opponent_moves=opponent_moves)
+                    game.result = WIN
+                elif game.score['player1'] < game.score['player2']:
+                    result = Result.objects.create(game=game, result=LOSE, player=player, player_moves=player_moves,
+                                                   opponent_moves=opponent_moves)
+                    game.result = LOSE
 
-            player_moves = [round.player_move for round in rounds]
-            opponent_moves = [round.opponent_move for round in rounds]
-
-            player_moves.append(class_name)
-            opponent_moves.append(self.opponent_move)
-            result.player_moves = player_moves
-            result.opponent_moves = opponent_moves
-            result.save()
-
-        game.save()
-        self.save()
+                # get the player and update his stats
+                player = Player.objects.get(user=game.user)
+                player.update_stats(result)
+                result.save()
+                game.save()
+                self.save()
 
 
 class Player(models.Model):
@@ -151,22 +156,39 @@ class Player(models.Model):
     draws = models.IntegerField(default=0, null=True, blank=True)
     losses = models.IntegerField(default=0, null=True, blank=True)
     games = models.ManyToManyField(Game, related_name='players', null=True, blank=True)
-    most_played_move = JSONField(default=dict, null=True, blank=True)
-    most_faced_move = JSONField(default=dict, null=True, blank=True)
+    played_moves = JSONField(default=dict, null=True, blank=True)
+    faced_moves = JSONField(default=dict, null=True, blank=True)
+    most_played_move = models.CharField(max_length=64, choices=GAME_MOVE_CHOICES, default='', null=True, blank=True)
+    most_faced_move = models.CharField(max_length=64, choices=GAME_MOVE_CHOICES, default='', null=True, blank=True)
 
-    def update_stats(self, result, player_move, computer_move):
-        results = Result.objects.filter(player=self)
-        moves = [result.player_moves for result in results]
-        faced_moves = [result.opponent_moves for result in results]
-        if result == WIN:
+    def update_stats(self, result):
+        if result.result == WIN:
             self.wins += 1
-        elif result == LOSE:
+        elif result.result == LOSE:
             self.losses += 1
         else:
             self.draws += 1
 
-        self.most_played_move = max(moves, key=moves.count)
-        self.most_faced_move = max(faced_moves, key=faced_moves.count)
+        # update the most_played_move field
+        self.most_played_move = json.loads(self.most_played_move)
+        for move in result.player_moves:
+            if move in self.most_played_move:
+                self.most_played_move[move] += 1
+            else:
+                self.most_played_move[move] = 1
+        self.most_played_move = max(self.most_played_move, key=self.most_played_move.get)
+        self.most_played_move = json.dumps(self.most_played_move)
+
+        # update the most_faced_move field
+        self.most_faced_move = json.loads(self.most_faced_move)
+        for move in result.opponent_moves:
+            if move in self.most_faced_move:
+                self.most_faced_move[move] += 1
+            else:
+                self.most_faced_move[move] = 1
+
+        self.most_faced_move = max(self.most_faced_move, key=self.most_faced_move.get)
+        self.most_faced_move = json.dumps(self.most_faced_move)
 
         self.save()
 
@@ -187,6 +209,9 @@ class Result(models.Model):
 
     class Meta:
         ordering = ['created']
+
+    def __str__(self):
+        return f"{self.game} - {self.result}"
 
 
 @receiver(post_save, sender=User)

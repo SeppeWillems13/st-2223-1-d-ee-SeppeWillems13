@@ -107,18 +107,11 @@ def room(request, pk):
 
     # Define the template name
     template_name = 'base/room.html'
-
     if request.method == 'POST':
         # Validate the form data
         if not request.POST.get('body'):
             messages.error(request, 'The message cannot be empty')
         else:
-            # Create a new game instance
-            game = Game.objects.create(
-                user=request.user,
-                room=_room,
-                body=request.POST.get('body')
-            )
             return redirect(reverse('room', args=[pk]))
 
     room_games = _room.game_set.select_related('user').all()
@@ -301,13 +294,15 @@ def leave_room(request, room_code):
         if room.exists():
             player = Player.objects.get(user=request.user)
             room = room[0]
+            print(room)
+            print(room.players)
             room.players.remove(player)
             room.save()
         else:
             print('Room does not exist')
-        return redirect('home')
+        return redirect('/')
     else:
-        return redirect('home')
+        return redirect('/')
 
 
 from django.shortcuts import get_object_or_404
@@ -318,7 +313,16 @@ from django.http import JsonResponse
 def start_game_offline(request, room_id):
     if request.method == 'POST':
         room = get_object_or_404(Room, code=room_id)
-        best_of = json.loads(request.body).get('bestOf', 3)
+        # check if a game exists for this room and set the status to aborted
+        old_game = Game.objects.filter(room=room)
+        if old_game.exists():
+            old_game = old_game[0]
+            old_game.game_status = 'Abandoned'
+            old_game.save()
+
+        best_of = int(json.loads(request.body).get('bestOf'))
+        if best_of not in [1, 3, 5, 7, 9, 11, 13]:
+            best_of = 3
         game, created = Game.objects.get_or_create(room=room, user=request.user, best_of=best_of,
                                                    defaults={'score': {"player1": 0, "player2": 0}})
         game.save()
@@ -341,6 +345,9 @@ def process_image(image):
 def play_round(request, game_id):
     game = Game.objects.get(id=game_id)
     if request.method == 'POST':
+        # check if the game is still active and if the user is allowed to play
+        if game.game_status == 'Completed' or game.game_status == 'Abandoned':
+            return JsonResponse({'success': False, 'message': 'Game is not active'})
         screenshot = json.loads(request.body)['screenshot']
 
         def resize_and_show(image):
