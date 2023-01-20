@@ -136,10 +136,13 @@ def room_not_found(request, pk):
 def userProfile(request, pk):
     # Retrieve the user instance or return a 404 error if it does not exist
     user = get_object_or_404(User, pk=pk)
+    #get the player instance
+    player = Player.objects.get(user=user)
     # Retrieve the rooms created by the user
     rooms = Room.objects.filter(host=user)
     # Retrieve the games played by the user
     room_games = Game.objects.filter(user=user).order_by('-created')
+    print(room_games)
     # Define the template name
     template_name = 'base/profile.html'
 
@@ -149,7 +152,7 @@ def userProfile(request, pk):
     room_games = paginator.get_page(page)
 
     context = {'user': user, 'rooms': rooms,
-               'room_games': room_games}
+               'room_games': room_games, 'player': player}
     return render(request, template_name, context)
 
 
@@ -315,7 +318,7 @@ def start_game_offline(request, room_id):
         room = get_object_or_404(Room, code=room_id)
         # check if a game exists for this room and set the status to aborted
         old_game = Game.objects.filter(room=room)
-        if old_game.exists():
+        if old_game.exists() and old_game[0].game_status == 'Ongoing':
             old_game = old_game[0]
             old_game.game_status = 'Abandoned'
             old_game.save()
@@ -323,8 +326,10 @@ def start_game_offline(request, room_id):
         best_of = int(json.loads(request.body).get('bestOf'))
         if best_of not in [1, 3, 5, 7, 9, 11, 13]:
             best_of = 3
-        game, created = Game.objects.get_or_create(room=room, user=request.user, best_of=best_of,
-                                                   defaults={'score': {"player1": 0, "player2": 0}})
+
+        game = Game.objects.create(room=room, user=request.user, best_of=best_of)
+
+        print(game)
         game.save()
         game_dict = model_to_dict(game)
         return JsonResponse({
@@ -379,7 +384,7 @@ def play_round(request, game_id):
         with mp_hands.Hands(
                 static_image_mode=True,
                 max_num_hands=1,
-                min_detection_confidence=0.7) as hands:
+                min_detection_confidence=0.33) as hands:
 
             # Convert the BGR image to RGB, flip the image around y-axis for correct
             # handedness output and process it with MediaPipe Hands.
@@ -420,7 +425,7 @@ def play_round(request, game_id):
                 _round.save()
                 outcome = _round.outcome
                 computer_move = _round.opponent_move
-
+                game = Game.objects.get(id=game_id)
                 return JsonResponse(
                     {'success': True, 'player_move': class_name, 'confidence_score': str(confidence_score),
                      'hands_detected': True, 'computer_move': computer_move, 'result': outcome,
@@ -441,3 +446,10 @@ def crop_handbox(annotated_image, hand_landmarks, image_height, image_width, res
         max_y * image_height + offset_y * image_height)
     hand_image = annotated_image[min_y:max_y, min_x:max_x]
     return hand_image
+
+
+#add a game detail view
+def game_detail(request, game_id):
+    game = Game.objects.get(id=game_id)
+    rounds = Round.objects.filter(game=game)
+    return render(request, 'base/game_detail.html', {'game': game, 'rounds': rounds})

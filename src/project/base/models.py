@@ -88,6 +88,7 @@ class Game(models.Model):
 
 
 class Round(models.Model):
+    round_number = models.IntegerField(default=0)
     game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='rounds')
     player_move = models.CharField(max_length=20, choices=GAME_MOVE_CHOICES)
     opponent_move = models.CharField(max_length=20, choices=GAME_MOVE_CHOICES)
@@ -105,11 +106,14 @@ class Round(models.Model):
 
     def play_offline_round(self, class_name, game_id):
         game = Game.objects.get(pk=game_id)
-
+        if not game.score:
+            game.score = {'User': 0, 'Computer': 0}
+            game.save()
         if game.game_status == COMPLETED:
             return
         else:
             game.rounds_played += 1
+            self.round_number = game.rounds_played
             self.player_move = dict(GAME_MOVE_CHOICES)[class_name]
             self.get_computer_move()
             if class_name == self.opponent_move:
@@ -118,25 +122,28 @@ class Round(models.Model):
                     (class_name == SCISSORS and self.opponent_move == PAPER) or \
                     (class_name == PAPER and self.opponent_move == ROCK):
                 self.outcome = WIN
-                game.score['player1'] += 1
+                game.score['User'] += 1
             else:
                 self.outcome = LOSE
-                game.score['player2'] += 1
+                game.score['Computer'] += 1
 
             game.save()
             self.save()
-
-            if game.score['player1'] == game.best_of / 2 + 0.5 or game.score['player2'] == game.best_of / 2 + 0.5:
+            if game.score['User'] == (game.best_of / 2 + 0.5) or game.score['Computer'] == (game.best_of / 2 + 0.5):
+                print(
+                    "game.score['User'] == (game.best_of / 2 + 0.5) or game.score['Computer'] == (game.best_of / 2 + 0.5)")
                 player = Player.objects.get(user=game.user)
                 game.game_status = COMPLETED
                 rounds = Round.objects.filter(game=game)
                 player_moves = [round.player_move for round in rounds]
                 opponent_moves = [round.opponent_move for round in rounds]
-                if game.score['player1'] > game.score['player2']:
+                if game.score['User'] > game.score['Computer']:
+                    print("game.score['User'] > game.score['Computer']")
                     result = Result.objects.create(game=game, result=WIN, player=player, player_moves=player_moves,
                                                    opponent_moves=opponent_moves)
                     game.result = WIN
-                elif game.score['player1'] < game.score['player2']:
+                elif game.score['User'] < game.score['Computer']:
+                    print("game.score['User'] < game.score['Computer']")
                     result = Result.objects.create(game=game, result=LOSE, player=player, player_moves=player_moves,
                                                    opponent_moves=opponent_moves)
                     game.result = LOSE
@@ -153,43 +160,47 @@ class Player(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
     room = models.ManyToManyField(Room, related_name='players', null=True, blank=True)
     wins = models.IntegerField(default=0, null=True, blank=True)
-    draws = models.IntegerField(default=0, null=True, blank=True)
     losses = models.IntegerField(default=0, null=True, blank=True)
     games = models.ManyToManyField(Game, related_name='players', null=True, blank=True)
     played_moves = JSONField(default=dict, null=True, blank=True)
     faced_moves = JSONField(default=dict, null=True, blank=True)
     most_played_move = models.CharField(max_length=64, choices=GAME_MOVE_CHOICES, default='', null=True, blank=True)
     most_faced_move = models.CharField(max_length=64, choices=GAME_MOVE_CHOICES, default='', null=True, blank=True)
+    win_streak = models.IntegerField(default=0, null=True, blank=True)
+    loss_streak = models.IntegerField(default=0, null=True, blank=True)
+    win_percentage = models.FloatField(default=0, null=True, blank=True)
 
     def update_stats(self, result):
         if result.result == WIN:
             self.wins += 1
+            self.loss_streak = 0
+            self.win_streak += 1
         elif result.result == LOSE:
             self.losses += 1
-        else:
-            self.draws += 1
+            self.win_streak = 0
+            self.loss_streak += 1
 
-        # update the most_played_move field
-        self.most_played_move = json.loads(self.most_played_move)
+        total_games = self.wins + self.losses
+        self.win_percentage = round(self.wins / total_games * 100, 2)
+
+        # update the played_moves field with the moves played in the game
         for move in result.player_moves:
-            if move in self.most_played_move:
-                self.most_played_move[move] += 1
+            if move in self.played_moves:
+                self.played_moves[move] += 1
             else:
-                self.most_played_move[move] = 1
-        self.most_played_move = max(self.most_played_move, key=self.most_played_move.get)
-        self.most_played_move = json.dumps(self.most_played_move)
+                self.played_moves[move] = 1
 
-        # update the most_faced_move field
-        self.most_faced_move = json.loads(self.most_faced_move)
+        self.most_played_move = max(self.played_moves, key=self.played_moves.get)
+
         for move in result.opponent_moves:
-            if move in self.most_faced_move:
-                self.most_faced_move[move] += 1
+            if move in self.faced_moves:
+                self.faced_moves[move] += 1
             else:
-                self.most_faced_move[move] = 1
+                self.faced_moves[move] = 1
 
-        self.most_faced_move = max(self.most_faced_move, key=self.most_faced_move.get)
-        self.most_faced_move = json.dumps(self.most_faced_move)
+        self.most_faced_move = max(self.faced_moves, key=self.faced_moves.get)
 
+        # update the win_streak and loss_streak fields and the win_percentage field
         self.save()
 
     def __str__(self):

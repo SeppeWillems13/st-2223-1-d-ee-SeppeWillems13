@@ -26,7 +26,12 @@
         <div class="profile__about">
           <h3>About</h3>
           <p>
-            {{user.bio}}
+            {{player.win_percentage}}% win rate
+            <br>
+            {{player.wins}} wins
+            <br>
+            {{player.losses}} losses
+
           </p>
         </div>
       </div>
@@ -41,6 +46,10 @@
 
     </div>
     <!-- Room List End -->
+
+     <!-- Activities Start -->
+    {% include 'base/activity_component.html' %}
+    <!-- Activities End -->
 
   </div>
 </main>
