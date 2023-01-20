@@ -23,9 +23,9 @@ image_height = 300
 def resize_and_show(image):
     h, w = image.shape[:2]
     if h < w:
-        img = cv2.resize(image, (image_width, math.floor(h / (w / image_width))))
+        cv2.resize(image, (image_width, math.floor(h / (w / image_width))))
     else:
-        img = cv2.resize(image, (math.floor(w / (h / image_height)), image_height))
+        cv2.resize(image, (math.floor(w / (h / image_height)), image_height))
 
 
 def crop_and_predict(image: np.ndarray, hand_landmarks: mp_hands.HandLandmark) -> None:
@@ -80,7 +80,7 @@ with mp_hands.Hands(
             # Show the image in a window
             cv2.imshow('Webcam Image', hand_image)
             # Make the image a numpy array and reshape it to the models input shape.
-            hand_image = np.asarray(hand_image, dtype=np.float32).reshape(1, 224, 224, 3)
+            hand_image = np.asarray(hand_image, dtype=np.float32).reshape(1, 224, 3)
             # Normalize the image array
             hand_image = (hand_image / 127.5) - 1
             # Have the model predict what the current image is. Model.predict

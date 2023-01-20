@@ -41,7 +41,8 @@ def crop_and_save(image: np.ndarray, hand_landmarks: mp_hands.HandLandmark, fold
     cv2.imwrite(f"{folder}/{user_input}/{picture_name}.jpg", hand_image)
 
 
-folder = r"C:\Users\seppe\PycharmProjects\st-2223-1-d-ee-SeppeWillems13\src\project\base\hand_recognition\new_image_data"
+folder = r"C:\Users\seppe\PycharmProjects\st-2223-1-d-ee-SeppeWillems13\src\project\base\hand_recognition" \
+         r"\new_image_data"
 if len(sys.argv) != 2:
     print("Please provide a valid input for rock, paper or scissors")
     sys.exit()

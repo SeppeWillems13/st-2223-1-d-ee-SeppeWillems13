@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('base', '0004_alter_game_score'),
     ]
@@ -23,11 +22,13 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='player',
             name='most_faced_move',
-            field=models.CharField(blank=True, choices=[('Rock', 'Rock'), ('Paper', 'Paper'), ('Scissors', 'Scissors')], default='', max_length=64, null=True),
+            field=models.CharField(blank=True, choices=[('Rock', 'Rock'), ('Paper', 'Paper'), ('Scissors', 'Scissors')],
+                                   default='', max_length=64, null=True),
         ),
         migrations.AlterField(
             model_name='player',
             name='most_played_move',
-            field=models.CharField(blank=True, choices=[('Rock', 'Rock'), ('Paper', 'Paper'), ('Scissors', 'Scissors')], default='', max_length=64, null=True),
+            field=models.CharField(blank=True, choices=[('Rock', 'Rock'), ('Paper', 'Paper'), ('Scissors', 'Scissors')],
+                                   default='', max_length=64, null=True),
         ),
     ]

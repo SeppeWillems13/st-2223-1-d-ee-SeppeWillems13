@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('base', '0005_player_faced_moves_player_played_moves_and_more'),
     ]

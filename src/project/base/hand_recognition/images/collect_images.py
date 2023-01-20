@@ -12,6 +12,7 @@ from cvzone.HandTrackingModule import HandDetector
 def collect_images(label_name, num_samples):
     """Get num_samples of type label_name with hand recognition and save them in their respected folder"""
     # Set up the save path and create the directory if it doesn't exist
+    global img_white
     save_path = os.path.join('../image_data', label_name)
     os.makedirs(save_path, exist_ok=True)
 
@@ -26,11 +27,11 @@ def collect_images(label_name, num_samples):
         print("Error opening video stream or file")
         return
 
-    start = False
+    False
     count = 0
-    #delay = 1000  # delay in milliseconds
-    start_key = ord('s')
-    stop_key = ord('q')
+    # delay = 1000  # delay in milliseconds
+    ord('s')
+    ord('q')
 
     while True:
         if count == num_samples:
@@ -91,13 +92,13 @@ def collect_images(label_name, num_samples):
         cv2.imshow("Image", img)
 
         # Check if the user has pressed the start key
-        #key = cv2.waitKey(delay)
-        #if key == start_key:
+        # key = cv2.waitKey(delay)
+        # if key == start_key:
         start = True
 
         # Check if the user has pressed the stop key
-        #elif key == stop_key:
-            #break
+        # elif key == stop_key:
+        # break
 
         # Save the preprocessed image to a file if collection has started
         if start:

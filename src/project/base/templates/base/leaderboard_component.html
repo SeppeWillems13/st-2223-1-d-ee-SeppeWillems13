@@ -2,15 +2,18 @@
     <div class="activities__header">
         <h2>Leaderboard</h2>
     </div>
-    {% for player in players %}
+    {% for player in players_ranked %}
     <div class="activities__box">
-        <a href="{% url 'user-profile' player.user.id%}" class="roomListRoom__author">
+        <a class="roomListRoom__author" href="{% url 'user-profile' player.user.id%}">
             <div class="avatar avatar--small">
-                <img src="{{player.user.avatar.url}}" />
+                <img src="{{player.user.avatar.url}}"/>
             </div>
             <p>
                 @{{player.user.username}}
-                <span>{{player.created|timesince}} ago</span>
+                <span>
+                    {{player.win_percentage}}%
+                    {% if player.win_streak %} +{{player.win_streak}} {% elif player.lose_streak %} -{{player.lose_streak}} {% endif %}
+                </span>
             </p>
         </a>
     </div>

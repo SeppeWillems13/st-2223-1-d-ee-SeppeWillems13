@@ -2,55 +2,55 @@
 
 {% block content %}
 <main class="profile-page layout layout--3">
-  <div class="container">
+    <div class="container">
 
-    <!-- Players Start -->
-    {% include 'base/players_component.html' %}
-    <!-- Players End -->
+        <!-- Players Start -->
+        {% include 'base/players_component.html' %}
+        <!-- Players End -->
 
-    <!-- Room List Start -->
-    <div class="roomList">
-      <div class="profile">
-        <div class="profile__avatar">
-          <div class="avatar avatar--large active">
-            <img src="{{user.avatar.url}}" />
-          </div>
+        <!-- Room List Start -->
+        <div class="roomList">
+            <div class="profile">
+                <div class="profile__avatar">
+                    <div class="avatar avatar--large active">
+                        <img src="{{user.avatar.url}}"/>
+                    </div>
+                </div>
+                <div class="profile__info">
+                    <h3>{{user.name}}</h3>
+                    <p>@{{user.username}}</p>
+                    {% if request.user == user %}
+                    <a class="btn btn--main btn--pill" href="{% url 'update-user' %}">Edit Profile</a>
+                    {% endif %}
+                </div>
+                <div class="profile__about">
+                    <h3>About</h3>
+                    <p>
+                        {{player.win_percentage}}% win rate
+                        <br>
+                        {{player.wins}} wins
+                        <br>
+                        {{player.losses}} losses
+
+                    </p>
+                </div>
+            </div>
+
+            <div class="roomList__header">
+                <div>
+                    <h2>Game Rooms Hosted by {{user.username}}</h2>
+                </div>
+            </div>
+            {% include 'base/feed_component.html' %}
+
+
         </div>
-        <div class="profile__info">
-          <h3>{{user.name}}</h3>
-          <p>@{{user.username}}</p>
-          {% if request.user == user %}
-          <a href="{% url 'update-user' %}" class="btn btn--main btn--pill">Edit Profile</a>
-          {% endif %}
-        </div>
-        <div class="profile__about">
-          <h3>About</h3>
-          <p>
-            {{player.win_percentage}}% win rate
-            <br>
-            {{player.wins}} wins
-            <br>
-            {{player.losses}} losses
+        <!-- Room List End -->
 
-          </p>
-        </div>
-      </div>
-
-      <div class="roomList__header">
-        <div>
-          <h2>Game Rooms Hosted by {{user.username}}</h2>
-        </div>
-      </div>
-      {% include 'base/feed_component.html' %}
-
+        <!-- Activities Start -->
+        {% include 'base/activity_component.html' %}
+        <!-- Activities End -->
 
     </div>
-    <!-- Room List End -->
-
-     <!-- Activities Start -->
-    {% include 'base/activity_component.html' %}
-    <!-- Activities End -->
-
-  </div>
 </main>
 {% endblock content %}

@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
+from django.core.validators import EmailValidator
 from django.forms import ModelForm
 
 from .models import Room, User, Game
@@ -28,7 +29,13 @@ class GameForm(forms.ModelForm):
         model = Game
         fields = ['best_of']
 
+
 class UserForm(ModelForm):
     class Meta:
         model = User
         fields = ['avatar', 'name', 'username', 'email']
+
+
+class LoginForm(ModelForm):
+    email = forms.EmailField(validators=[EmailValidator()])
+    password = forms.CharField(min_length=8)

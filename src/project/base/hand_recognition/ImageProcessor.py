@@ -7,7 +7,7 @@ class ImageProcessor:
         self.img_size = 300
 
     def process_image(self, img):
-        #TODO crop the image to the bounding box of the hand
+        # TODO crop the image to the bounding box of the hand
 
         # Convert the image to grayscale
         img_crop = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -46,4 +46,3 @@ class ImageProcessor:
         img_resize = np.expand_dims(img_crop, axis=2)
 
         return img_resize
-

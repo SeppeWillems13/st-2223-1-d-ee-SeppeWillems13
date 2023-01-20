@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('base', '0006_player_loss_streak_player_win_percentage_and_more'),
     ]

@@ -1,29 +1,29 @@
 {% load static %}
 {% csrf_token %}
-    <div id="videos">
-        <video class="video-player" id="user-1" autoplay playsinline></video>
-        <video class="video-player" id="user-2" autoplay playsinline></video>
+<div id="videos">
+    <video autoplay class="video-player" id="user-1" playsinline></video>
+    <video autoplay class="video-player" id="user-2" playsinline></video>
+</div>
+
+<div id="controls">
+
+    <div class="control-container" id="camera-btn">
+        <img src="{% static 'icons/camera.png' %}"/>
+    </div>
+    <div class="control-container" id="play-btn">
+        <img src="{% static 'icons/mic.png' %}"/>
     </div>
 
-    <div id="controls">
-
-        <div class="control-container" id="camera-btn">
-            <img src="{% static 'icons/camera.png' %}" />
-        </div>
-        <div class="control-container" id="play-btn">
-            <img src="{% static 'icons/mic.png' %}" />
-        </div>
-
-        <div class="control-container" id="leave-btn">
-            <img src="{% static 'icons/phone.png' %}" />
-        </div>
-
+    <div class="control-container" id="leave-btn">
+        <img src="{% static 'icons/phone.png' %}"/>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
-    <script src="{% static 'js/agora-rtm-sdk-1.5.1.js' %}"></script>
+
+</div>
+<script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"></script>
+<script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+<script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+<script src="{% static 'js/agora-rtm-sdk-1.5.1.js' %}"></script>
 <script>
 let APP_ID = "171f25c1a1c644389463a00bbcf1fb8e"
 
@@ -232,6 +232,7 @@ document.getElementById('leave-btn').addEventListener('click', leaveRoom)
 
 init()
 
+
 </script>
 <style>
  *{
@@ -312,4 +313,5 @@ init()
             width: 20px;
         }
 }
+
 </style>

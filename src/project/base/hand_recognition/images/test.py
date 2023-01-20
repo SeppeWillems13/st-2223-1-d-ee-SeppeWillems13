@@ -12,6 +12,7 @@ def collect_images(label_name=None, num_samples=None, image_dir=None):
     """Get num_samples of type label_name with hand recognition and save them in their respected folder"""
 
     # Set up the save path and create the directory if it doesn't exist
+    global img_crop
     if label_name is None:
         label_name = input("Enter the label name: ")
     save_path = os.path.join('../image_data', label_name)

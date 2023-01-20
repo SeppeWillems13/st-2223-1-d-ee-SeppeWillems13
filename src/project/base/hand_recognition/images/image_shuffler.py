@@ -48,7 +48,7 @@ class image_shuffler:
 
             # Calculate the number of images to put in the training and test sets
             num_train = int(0.7 * len(image_paths))
-            num_test = len(image_paths) - num_train
+            len(image_paths) - num_train
 
             # Split the images into the training and test sets
             train_images = image_paths[:num_train]

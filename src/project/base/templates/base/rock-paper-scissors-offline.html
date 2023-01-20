@@ -3,55 +3,54 @@
 <div class="room__conversation">
     <div class="scoreboard">
         <h2 id="best-of">Scoreboard: Best of:</h2>
-      <table>
-        <thead>
-          <td>Player</td>
-          <td id="roundOrResult">Round</td>
-          <td>Computer</td>
-        </thead>
-        <tbody>
-          <tr>
-            <td class="Player-count">0</td>
-              <td class="Round-count"></td>
-            <td class="Computer-count">0</td>
-          </tr>
-        </tbody>
-      </table>
+        <table>
+            <thead>
+            <td>Player</td>
+            <td id="roundOrResult">Round</td>
+            <td>Computer</td>
+            </thead>
+            <tbody>
+            <tr>
+                <td class="Player-count">0</td>
+                <td class="Round-count"></td>
+                <td class="Computer-count">0</td>
+            </tr>
+            </tbody>
+        </table>
     </div>
 </div>
-
 
 
 <div class="threads scroll">
-<form method="POST" enctype="multipart/form-data">
-    <div id="videos">
-        <video class="video-player" id="user-1" autoplay playsinline></video>
-        <canvas id="canvas-user-1" >
-        </canvas>
-    </div>
-    <div id="controls">
-        <div class="control-container" id="camera-btn">
-            <img src="{% static 'icons/photo-camera.png' %}" />
+    <form enctype="multipart/form-data" method="POST">
+        <div id="videos">
+            <video autoplay class="video-player" id="user-1" playsinline></video>
+            <canvas id="canvas-user-1">
+            </canvas>
         </div>
-        <div class="control-container" id="play-btn">
-            <img src="{% static 'icons/shuffle.png' %}" />
-        </div>
+        <div id="controls">
+            <div class="control-container" id="camera-btn">
+                <img src="{% static 'icons/photo-camera.png' %}"/>
+            </div>
+            <div class="control-container" id="play-btn">
+                <img src="{% static 'icons/shuffle.png' %}"/>
+            </div>
 
-        <div class="control-container" id="start-btn">
-            <img src="{% static 'icons/play-button.png' %}" />
+            <div class="control-container" id="start-btn">
+                <img src="{% static 'icons/play-button.png' %}"/>
+            </div>
+            <div class="control-container" id="leave-btn">
+                <img src="{% static 'icons/cancel.png' %}"/>
+            </div>
         </div>
-        <div class="control-container" id="leave-btn">
-            <img src="{% static 'icons/cancel.png' %}" />
-        </div>
-    </div>
-</form>
+    </form>
 </div>
 
 
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"></script>
+<script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+<script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
 <script src="{% static 'js/agora-rtm-sdk-1.5.1.js' %}"></script>
 
 <script>
@@ -121,7 +120,7 @@ let toggleCamera = async () => {
 
 let startGame = async () => {
     bestOf = prompt("Best of how many games? (1, 3, 5, 7, 9, 11, 13)");
-    //only prompts once it needs to keep untill a valid number is entered
+    //only prompts once it needs to keep until a valid number is entered
     while (bestOf % 2 == 0 || bestOf < 1 || bestOf > 13) {
         bestOf = prompt("Best of how many games? (1, 3, 5, 7, 9, 11, 13)");
     }
@@ -293,6 +292,7 @@ const leave_button = document.getElementById('leave-btn')
 leave_button.addEventListener('click', leaveRoom)
 
 init()
+
 </script>
 
 
@@ -412,4 +412,5 @@ canvas{
             width: 20px;
         }
 }
+
 </style>
