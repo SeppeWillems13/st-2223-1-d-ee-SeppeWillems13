@@ -17,7 +17,7 @@
 
             {% if request.user == game.user %}
             <div class="roomListRoom__actions">
-                <a href="{% url 'delete-message' game.id %}">
+                <a href="{% url 'delete-game' game.id %}">
                     <svg height="32" version="1.1" viewBox="0 0 32 32" width="32" xmlns="http://www.w3.org/2000/svg">
                         <title>remove</title>
                         <path

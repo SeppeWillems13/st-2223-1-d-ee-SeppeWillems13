@@ -27,7 +27,7 @@ def collect_images(label_name, num_samples):
         print("Error opening video stream or file")
         return
 
-    False
+    var = False
     count = 0
     # delay = 1000  # delay in milliseconds
     ord('s')

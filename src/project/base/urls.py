@@ -1,7 +1,8 @@
 from django.urls import path
 
-from . import views
 from . import room_logic, game_logic
+from . import views
+
 urlpatterns = [
     path('login/', views.loginPage, name="login"),
     path('logout/', views.logoutUser, name="logout"),
@@ -16,7 +17,7 @@ urlpatterns = [
     path('create-room/', room_logic.createRoom, name="create-room"),
     path('update-room/<str:pk>/', room_logic.updateRoom, name="update-room"),
     path('delete-room/<str:pk>/', room_logic.deleteRoom, name="delete-room"),
-    path('delete-message/<str:pk>/', views.deleteGame, name="delete-message"),
+    path('delete-game/<str:pk>/', views.deleteGame, name="delete-game"),
 
     path('update-user/', views.updateUser, name="update-user"),
     path('players/', views.playersPage, name="players"),

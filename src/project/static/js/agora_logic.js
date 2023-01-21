@@ -18,11 +18,21 @@ let handleUserLeft = (MemberId) => {
     document.getElementById('user-2').style.display = 'none'
     document.getElementById('user-1').classList.remove('smallFrame')
 
-    // Remove the player from the players list
-    let playersList = document.getElementById('players-list');
+    // Find the player element in the HTML template
     let playerToRemove = document.getElementById(`player-${MemberId}`);
-    playersList.removeChild(playerToRemove);
+
+    // Remove the player element from the players list
+    if (playerToRemove) {
+        playerToRemove.remove();
+    }
+
+    // Update the player count displayed in the HTML template
+    let playerCount = document.getElementById('player-count');
+    if (playerCount) {
+        playerCount.innerHTML = parseInt(playerCount.innerHTML) - 1;
+    }
 }
+
 
 let handleMessageFromPeer = async (message, MemberId) => {
 
@@ -31,12 +41,10 @@ let handleMessageFromPeer = async (message, MemberId) => {
     if (message.type === 'newPlayer') {
         // Extract the new player's information from the message
         let newPlayer = message.player;
-        // Update the players list on the page with the new player's information
-        let playersList = document.getElementById('players-list');
-        let newPlayerElement = document.createElement('li');
-        newPlayerElement.innerHTML = newPlayer.name;
-        playersList.appendChild(newPlayerElement);
+        // Update the players list and player count in the HTML template
+        updatePlayersList(newPlayer, MemberId);
     }
+
 
     if (message.type === 'offer') {
         createAnswer(MemberId, message.offer)
@@ -64,10 +72,11 @@ let handleUserJoined = async (MemberId) => {
                 'id': MemberId
             }
         })
-    }, MemberId)
+    }, MemberId);
+    updatePlayersList({
+        name: 'Player ' + MemberId
+    }, MemberId);
 }
-
-
 
 let createPeerConnection = async (MemberId) => {
     peerConnection = new RTCPeerConnection(servers)
@@ -143,5 +152,25 @@ let createAnswer = async (MemberId, offer) => {
 let addAnswer = async (answer) => {
     if (!peerConnection.currentRemoteDescription) {
         peerConnection.setRemoteDescription(answer)
+    }
+}
+
+
+function updatePlayersList(newPlayer, MemberId) {
+    // Get the players list element from the HTML template
+    let playersList = document.getElementById('participants__list');
+    console.log(playersList)
+    // Create a new player element
+    let newPlayerElement = document.createElement('li');
+    newPlayerElement.id = `player-${MemberId}`;
+    newPlayerElement.innerHTML = newPlayer.name;
+
+    // Add the new player element to the players list
+    playersList.appendChild(newPlayerElement);
+
+    // Update the player count displayed in the HTML template
+    let playerCount = document.getElementById('player-count');
+    if (playerCount) {
+        playerCount.innerHTML = parseInt(playerCount.innerHTML) + 1;
     }
 }

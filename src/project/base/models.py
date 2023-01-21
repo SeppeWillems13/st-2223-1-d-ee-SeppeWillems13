@@ -1,4 +1,3 @@
-import random
 import uuid
 
 from django.contrib.auth.models import AbstractUser

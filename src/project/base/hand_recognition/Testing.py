@@ -80,7 +80,7 @@ with mp_hands.Hands(
             # Show the image in a window
             cv2.imshow('Webcam Image', hand_image)
             # Make the image a numpy array and reshape it to the models input shape.
-            hand_image = np.asarray(hand_image, dtype=np.float32).reshape(1, 224, 3)
+            hand_image = np.asarray(hand_image, dtype=np.float32).reshape(1, 224)
             # Normalize the image array
             hand_image = (hand_image / 127.5) - 1
             # Have the model predict what the current image is. Model.predict

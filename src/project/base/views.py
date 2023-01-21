@@ -10,7 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.core import serializers
 from django.db.models import Q
 from django.forms import model_to_dict
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
@@ -131,7 +131,6 @@ def room(request, pk):
     return render(request, template_name, context)
 
 
-
 def room_not_found(request, pk):
     context = {"pk": pk}
     return render(request, 'base/room_not_found.html', context)
@@ -139,15 +138,19 @@ def room_not_found(request, pk):
 
 @login_required(login_url='login')
 def deleteGame(request, pk):
-    game = Game.objects.get(id=pk)
+    try:
+        game = Game.objects.get(id=pk)
+    except Game.DoesNotExist:
+        return redirect('user-profile', pk=request.user.id)
 
     if request.user != game.user:
         return HttpResponse('Your are not allowed here!!')
 
     if request.method == 'POST':
         game.delete()
-        return redirect('home')
+        return redirect(request.META.get('HTTP_REFERER', 'home'))
     return render(request, 'base/delete.html', {'obj': game})
+
 
 
 @login_required(login_url='login')

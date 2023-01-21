@@ -41,6 +41,7 @@ GAME_RESULT_CHOICES = (
 
 
 def check_if_game_is_done(_game):
+    global _result
     if _game.score['User'] == (_game.best_of / 2 + 0.5) or _game.score['Computer'] == (_game.best_of / 2 + 0.5):
         _player = Player.objects.get(user=_game.user)
         _game.game_status = COMPLETED
