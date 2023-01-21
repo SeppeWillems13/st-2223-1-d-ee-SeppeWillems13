@@ -34,8 +34,3 @@ class UserForm(ModelForm):
     class Meta:
         model = User
         fields = ['avatar', 'name', 'username', 'email']
-
-
-class LoginForm(ModelForm):
-    email = forms.EmailField(validators=[EmailValidator()])
-    password = forms.CharField(min_length=8)

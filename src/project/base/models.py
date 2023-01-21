@@ -43,11 +43,8 @@ class User(AbstractUser):
     email = models.EmailField(unique=True, null=True)
     avatar = models.ImageField(null=True, default="avatar.svg")
 
-    class Meta:
-        ordering = ['username']
-
-    def __str__(self):
-        return self.username
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
 
 
 class Room(models.Model):
@@ -68,6 +65,7 @@ class Room(models.Model):
 class Game(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    opponent = models.ForeignKey(User, on_delete=models.CASCADE, related_name='opponent', null=True, blank=True)
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
     game_status = models.CharField(max_length=10, choices=GAME_STATUS_CHOICES, default=ONGOING)
     score = JSONField(default=dict)

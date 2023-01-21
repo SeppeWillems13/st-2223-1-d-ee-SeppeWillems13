@@ -1,8 +1,8 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, Http404
+from django.http import JsonResponse, Http404
 from django.shortcuts import get_object_or_404
-from django.shortcuts import redirect
+from django.shortcuts import redirect, HttpResponse
 from django.shortcuts import render
 from django.urls import reverse
 
@@ -13,13 +13,17 @@ from .models import Room, Player
 @login_required(login_url='login')
 def leave_room(request, room_code):
     if request.method == 'POST':
-        _room = Room.objects.filter(code=room_code)
-        if _room.exists():
+        try:
+            room = Room.objects.get(code=room_code)
             player = Player.objects.get(user=request.user)
-            _room = _room[0]
-            _room.players.remove(player)
-            _room.save()
-    return redirect('/')
+            room.players.remove(player)
+            room.save()
+            return JsonResponse({"success": True, "message": "You have successfully left the room."})
+        except Room.DoesNotExist:
+            return JsonResponse({"success": False, "message": "The room you are trying to leave does not exist."})
+        except Player.DoesNotExist:
+            return JsonResponse({"success": False, "message": "The player trying to leave the room does not exist."})
+    return HttpResponse('You are not allowed to access this page.')
 
 
 def createRoom(request):

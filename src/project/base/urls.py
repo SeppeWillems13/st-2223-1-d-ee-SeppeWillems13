@@ -23,6 +23,7 @@ urlpatterns = [
     path('activity/', views.activityPage, name="activity"),
 
     path('start_game_offline/<str:room_id>', views.start_game_offline, name='start_game_offline'),
+    path('start_game_online/<str:room_id>', views.start_game_online, name='start_game_online'),
     path('play_round/<str:game_id>/', game_logic.play_round, name='play_round'),
     path('game_detail/<str:game_id>/', views.game_detail, name='game_detail'),
 ]

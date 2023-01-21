@@ -70,10 +70,11 @@
                     </div>
                 </div>
                 {% if room.online %}
-                {% include 'base/rock-paper-scissors-online.html' %}
+                    {% include 'base/rock-paper-scissors-online.html' with players_json=players_json %}
                 {% else %}
-                {% include 'base/rock-paper-scissors-offline.html' %}
+                    {% include 'base/rock-paper-scissors-offline.html' with players_json=players_json %}
                 {% endif %}
+
             </div>
         </div>
         <!-- Room End -->

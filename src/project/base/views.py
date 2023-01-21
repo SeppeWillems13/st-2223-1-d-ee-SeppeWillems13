@@ -5,9 +5,9 @@ import math
 import cv2
 import numpy as np
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
-from django.core.paginator import Paginator
+from django.core import serializers
 from django.db.models import Q
 from django.forms import model_to_dict
 from django.http import HttpResponse
@@ -17,7 +17,7 @@ from django.shortcuts import redirect
 from django.shortcuts import render
 from django.urls import reverse
 
-from .forms import UserForm, MyUserCreationForm, LoginForm
+from .forms import UserForm, MyUserCreationForm
 from .hand_recognition import HandClassifier
 from .models import Room, Game, User, Player, Round
 
@@ -25,41 +25,33 @@ from .models import Room, Game, User, Player, Round
 # Create your views here.
 def loginPage(request):
     page = 'login'
-    # if user is already authenticated just redirect to home page
     if request.user.is_authenticated:
         return redirect('home')
-    # on post do minor checks
+
     if request.method == 'POST':
-        form = LoginForm(request.POST)
-        if form.is_valid():
-            email = form.cleaned_data['email'].lower()
-            password = form.cleaned_data['password']
+        email = request.POST.get('email').lower()
+        password = request.POST.get('password')
 
-            user = authenticate(request, email=email, password=password)
+        try:
+            user = User.objects.get(email=email)
+        except:
+            messages.error(request, 'User does not exist')
 
-            if user is not None:
-                login(request, user)
-                return redirect('home')
-            else:
-                messages.error(request, 'The email address or password you entered is incorrect. Please check your '
-                                        'email address and password and try again.')
+        user = authenticate(request, email=email, password=password)
+
+        if user is not None:
+            login(request, user)
+            return redirect('home')
         else:
-            messages.error(request, 'Invalid form data. Please enter a valid email address and password.')
-    else:
-        form = LoginForm()
+            messages.error(request, 'Username OR password does not exit')
 
-    context = {'page': page, 'form': form}
+    context = {'page': page}
     return render(request, 'base/login_register.html', context)
 
 
 def logoutUser(request):
-    if request.method == 'GET':
-        logout(request)
-        messages.success(request, 'You have been logged out.')
-        return redirect('login')
-    else:
-        messages.error(request, 'Invalid request method.')
-        return redirect('home')
+    logout(request)
+    return redirect('home')
 
 
 def registerPage(request):
@@ -69,6 +61,7 @@ def registerPage(request):
             user = form.save(commit=False)
             user.username = user.username.lower()
             user.save()
+            print(user)
             login(request, user)
             messages.success(request, 'You have been registered and logged in.')
             return redirect('home')
@@ -88,7 +81,8 @@ def home(request):
 
     rooms = Room.objects.filter(Q(name__icontains=q))
     room_count = rooms.count()
-    context = {'rooms': rooms, 'room_count': room_count, 'players': players, 'players_ranked': Player.objects.all().order_by('-win_percentage')}
+    context = {'rooms': rooms, 'room_count': room_count, 'players': players,
+               'players_ranked': Player.objects.all().order_by('-win_percentage')}
     return render(request, 'base/home.html', context)
 
 
@@ -123,12 +117,19 @@ def room(request, pk):
         else:
             return redirect(reverse('room', args=[pk]))
 
-    room_games = _room.game_set.select_related('user').all()
-    players = _room.players.select_related('user').all()
+    players = Player.objects.filter(room=_room)
+    if request.user not in [player.user for player in players]:
+        player = Player.objects.get(user=request.user)
+        _room.players.add(player)
+        print(_room.players.all())
+        _room.save()
 
+    room_games = _room.game_set.select_related('user').all()
+    players_json = serializers.serialize("json", players)
     context = {'room': _room, 'room_games': room_games,
-               'players': players}
+               'players': players, 'players_json': players_json}
     return render(request, template_name, context)
+
 
 
 def room_not_found(request, pk):
@@ -200,6 +201,42 @@ def start_game_offline(request, room_id):
         game = Game.objects.create(room=_room, user=request.user, best_of=best_of)
 
         print(game)
+        game.save()
+        game_dict = model_to_dict(game)
+        return JsonResponse({
+            'success': True,
+            'message': 'Game started',
+            'game': game_dict,
+            'game_id': game.id
+        })
+    else:
+        return JsonResponse({'success': False, 'message': 'Invalid request method'})
+
+
+@login_required(login_url='login')
+def start_game_online(request, room_id):
+    if request.method == 'POST':
+        _room = get_object_or_404(Room, code=room_id)
+        # check if a game exists for this _room and set the status to aborted
+        old_game = Game.objects.filter(room=_room)
+        if old_game.exists() and old_game[0].game_status == 'Ongoing':
+            old_game = old_game[0]
+            old_game.game_status = 'Abandoned'
+            old_game.save()
+
+        players = json.loads(request.body).get('players')
+        player_ids = [player['pk'] for player in players]
+        users = User.objects.filter(id__in=player_ids)
+        opponent = users[0]
+        if opponent == _room.host:
+            opponent = users[1]
+
+        best_of = int(json.loads(request.body).get('bestOf'))
+        if best_of not in [1, 3, 5, 7, 9, 11, 13]:
+            best_of = 3
+
+        game = Game.objects.create(room=_room, user=request.user, opponent=opponent, best_of=best_of)
+
         game.save()
         game_dict = model_to_dict(game)
         return JsonResponse({
