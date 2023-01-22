@@ -77,7 +77,7 @@ def play_round(request, game_id):
         screenshot = json.loads(request.body)['screenshot']
         resized_image = resize_screenshot(screenshot, 720, 720)
 
-        #show the image
+        # show the image
         cv2.imshow('MediaPipe Hands', resized_image)
         cv2.waitKey(0)
         mp_hands = mp.solutions.hands
@@ -92,21 +92,19 @@ def play_round(request, game_id):
 
             # Convert the BGR image to RGB, flip the image around y-axis for correct
             # handedness output and process it with MediaPipe Hands.
-            # results = hands.process(cv2.flip(cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB), 1))
-            results = hands.process(cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB))
+            results = hands.process(cv2.flip(cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB), 1))
+            # results = hands.process(cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB))
 
-            fallback_result = None
-            if not results.multi_hand_landmarks:
-                fallback_result = my_fallback_detection_algorithm(resized_image)
-                if fallback_result is None:
-                    return JsonResponse(
-                        {'status': False, 'message': 'No hands detected', 'game_id': game_id,
-                         'game_status': _game.game_status})
+            if results.multi_hand_landmarks is None:
+                # fallback_result = my_fallback_detection_algorithm(resized_image)
+                # if fallback_result is None:
+                return JsonResponse(
+                    {'status': False, 'message': 'No hands detected', 'game_id': game_id,
+                     'game_status': _game.game_status})
 
             image_height, image_width, _ = resized_image.shape
-            # annotated_image = cv2.flip(resized_image.copy(), 1)
-            annotated_image = cv2.flip(cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB), 1)
-
+            # annotated_image = cv2.flip(cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB), 1)
+            annotated_image = cv2.flip(resized_image.copy(), 1)
             if results.multi_hand_landmarks is not None:
                 for hand_landmarks in results.multi_hand_landmarks:
                     mp_drawing.draw_landmarks(
@@ -116,12 +114,12 @@ def play_round(request, game_id):
                         mp_drawing_styles.get_default_hand_landmarks_style(),
                         mp_drawing_styles.get_default_hand_connections_style())
             else:
-                hand_landmarks = fallback_result
+                print("fallback_result")
 
-            print("hand_landmarks")
-            print(hand_landmarks)
-            print("fallback_result")
-            print(fallback_result)
+            # print("hand_landmarks")
+            # print(hand_landmarks)
+            # print("fallback_result")
+            # print(fallback_result)
 
             hand_image = draw_hand_box(annotated_image, hand_landmarks, image_height, image_width)
             class_name, confidence_score = process_image(hand_image)

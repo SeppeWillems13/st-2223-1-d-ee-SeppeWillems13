@@ -272,16 +272,10 @@ def my_fallback_detection_algorithm(image):
     # Find the largest contour
     if contours:
         hand_contour = max(contours, key=cv2.contourArea)
-
-        # Get the convex hull of the largest contour
-        hand_hull = cv2.convexHull(hand_contour)
-
-        # Get the landmarks of the hand
-        hand_landmarks = cv2.convexHull(hand_contour, returnPoints=False)
-
-        return hand_landmarks
+        return hand_contour
     else:
         return None
+
 
 
 def resize_screenshot(image, width, height):
@@ -302,6 +296,7 @@ def resize_screenshot(image, width, height):
 
 def draw_hand_box(annotated_image, hand_landmarks, image_height, image_width):
     min_x, min_y, max_x, max_y = 1.0, 1.0, 0.0, 0.0
+    print(hand_landmarks)
     for landmark in hand_landmarks.landmark:
         min_x, min_y = min(landmark.x, min_x), min(landmark.y, min_y)
         max_x, max_y = max(landmark.x, max_x), max(landmark.y, max_y)
