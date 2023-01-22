@@ -69,9 +69,9 @@ class image_shuffler:
 
 
 # Set the directories for the training and test sets
-train_dir = 'train'
-test_dir = 'test'
-image_dir = '../new_image_data'
+train_dir = '../dark_image_data/dark_image_train'
+test_dir = '../dark_image_data/dark_image_test'
+image_dir = '../dark_image_data'
 
 # Create an instance of the DataSplitter class
 splitter = image_shuffler(image_dir, train_dir, test_dir)

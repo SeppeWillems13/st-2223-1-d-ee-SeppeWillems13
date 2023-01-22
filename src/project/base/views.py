@@ -251,31 +251,9 @@ def start_game_online(request, room_id):
         return JsonResponse({'success': False, 'message': 'Invalid request method'})
 
 
-def process_image(image):
-    classifier = HandClassifier.HandClassifier()
+def process_image(image, dark_mode):
+    classifier = HandClassifier.HandClassifier(dark_mode)
     return classifier.classify(image)
-
-
-def my_fallback_detection_algorithm(image):
-    # Convert the image to grayscale
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    # Apply a Gaussian blur to the image
-    blur = cv2.GaussianBlur(gray, (5, 5), 0)
-
-    # Perform thresholding on the image
-    ret, thresh = cv2.threshold(blur, 60, 255, cv2.THRESH_BINARY_INV)
-
-    # Find contours in the thresholded image
-    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    # Find the largest contour
-    if contours:
-        hand_contour = max(contours, key=cv2.contourArea)
-        return hand_contour
-    else:
-        return None
-
 
 
 def resize_screenshot(image, width, height):

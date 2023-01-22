@@ -126,7 +126,7 @@ let playGame = async () => {
                         canvas.style.display = 'none'
                     }
                     if (!data.hands_detected) {
-                        alert("No hands detected. Please try again.")
+                        alert("No hands detected. Please try again. Try in a brighter room.")
                         screenshotSent = false;
                     } else if (data.message === "Invalid move") {
                         alert("Invalid move. Please try again.")

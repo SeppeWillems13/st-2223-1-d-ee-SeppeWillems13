@@ -7,7 +7,7 @@ from django.http import JsonResponse
 
 from .models import Player, Round, Result, Game
 from .player_logic import update_stats
-from .views import resize_screenshot, draw_hand_box, process_image, my_fallback_detection_algorithm
+from .views import resize_screenshot, draw_hand_box, process_image
 
 # Choices for the game_move field
 ROCK = 'Rock'
@@ -67,6 +67,17 @@ def check_if_game_is_done(_game):
     _game.save()
 
 
+def is_dark_image(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    average_brightness = cv2.mean(gray)[0]
+    # TODO FIX A TRESHOLD
+    print("average_brightness" + str(average_brightness))
+    if average_brightness < 65:
+        return True
+    else:
+        return False
+
+
 def play_round(request, game_id):
     _game = Game.objects.get(id=game_id)
     if request.method == 'POST':
@@ -77,9 +88,6 @@ def play_round(request, game_id):
         screenshot = json.loads(request.body)['screenshot']
         resized_image = resize_screenshot(screenshot, 720, 720)
 
-        # show the image
-        cv2.imshow('MediaPipe Hands', resized_image)
-        cv2.waitKey(0)
         mp_hands = mp.solutions.hands
         mp_drawing = mp.solutions.drawing_utils
         mp_drawing_styles = mp.solutions.drawing_styles
@@ -96,16 +104,22 @@ def play_round(request, game_id):
             # results = hands.process(cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB))
 
             if results.multi_hand_landmarks is None:
-                # fallback_result = my_fallback_detection_algorithm(resized_image)
-                # if fallback_result is None:
-                return JsonResponse(
-                    {'status': False, 'message': 'No hands detected', 'game_id': game_id,
-                     'game_status': _game.game_status})
-
-            image_height, image_width, _ = resized_image.shape
-            # annotated_image = cv2.flip(cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB), 1)
-            annotated_image = cv2.flip(resized_image.copy(), 1)
-            if results.multi_hand_landmarks is not None:
+                # show the image with the hand
+                if is_dark_image(resized_image):
+                    cv2.imshow('is dark image', cv2.flip(resized_image, 1))
+                    cv2.waitKey(0)
+                    class_name, confidence_score = process_image(resized_image, True)
+                    # check if confidence score is high enough
+                    if confidence_score < 0.75:
+                        return JsonResponse(
+                            {'status': False, 'message': 'No hands detected in bright mode and dark mode'})
+                else:
+                    cv2.imshow('is not dark image but also no hands', cv2.flip(resized_image, 1))
+                    cv2.waitKey(0)
+                    return JsonResponse({'status': False, 'message': 'Image is too bright for dark mode but no hands detected'})
+            else:
+                image_height, image_width, _ = resized_image.shape
+                annotated_image = cv2.flip(resized_image.copy(), 1)
                 for hand_landmarks in results.multi_hand_landmarks:
                     mp_drawing.draw_landmarks(
                         annotated_image,
@@ -113,25 +127,13 @@ def play_round(request, game_id):
                         mp_hands.HAND_CONNECTIONS,
                         mp_drawing_styles.get_default_hand_landmarks_style(),
                         mp_drawing_styles.get_default_hand_connections_style())
-            else:
-                print("fallback_result")
 
-            # print("hand_landmarks")
-            # print(hand_landmarks)
-            # print("fallback_result")
-            # print(fallback_result)
-
-            hand_image = draw_hand_box(annotated_image, hand_landmarks, image_height, image_width)
-            class_name, confidence_score = process_image(hand_image)
-
-            cv2.imshow('MediaPipe Hands', hand_image)
-            cv2.waitKey(0)
-            folder = r"C:\Users\seppe\PycharmProjects\st-2223-1-d-ee-SeppeWillems13\src\project\base\hand_recognition" \
-                     r"\application_images"
-            cv2.imwrite(f"{folder}\{confidence_score}.jpg", hand_image)
+                hand_image = draw_hand_box(annotated_image, hand_landmarks, image_height, image_width)
+                class_name, confidence_score = process_image(hand_image, False)
 
             # if confidence_score is less than 0.5, return error
-            if confidence_score < 0.5:
+            print(f"Confidence score: {confidence_score}")
+            if confidence_score < 0.70:
                 return JsonResponse(
                     {'success': False, 'player_move': class_name, 'confidence_score': str(confidence_score),
                      'hands_detected': True, 'score': _game.score})
