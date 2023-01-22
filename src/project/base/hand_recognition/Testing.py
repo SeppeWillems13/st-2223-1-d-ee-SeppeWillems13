@@ -23,9 +23,10 @@ image_height = 300
 def resize_and_show(image):
     h, w = image.shape[:2]
     if h < w:
-        cv2.resize(image, (image_width, math.floor(h / (w / image_width))))
+        img = cv2.resize(image, (image_width, math.floor(h / (w / image_width))))
     else:
-        cv2.resize(image, (math.floor(w / (h / image_height)), image_height))
+        img = cv2.resize(image, (math.floor(w / (h / image_height)), image_height))
+    cv2.imshow("Hand In Resize", img)
 
 
 def crop_and_predict(image: np.ndarray, hand_landmarks: mp_hands.HandLandmark) -> None:
@@ -50,20 +51,16 @@ with mp_hands.Hands(
         model_complexity=0,
         min_detection_confidence=0.5,
         min_tracking_confidence=0.5) as hands:
-    count = 0
     current_hand_landmarks = None
-    while cap.isOpened():
+    while True:
         success, image = cap.read()
         if not success:
             print("Ignoring empty camera frame.")
             continue
 
-        image.flags.writeable = False
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         results = hands.process(image)
 
-        image.flags.writeable = True
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         if results.multi_hand_landmarks:
             for hand_landmarks in results.multi_hand_landmarks:
                 current_hand_landmarks = hand_landmarks
@@ -73,28 +70,22 @@ with mp_hands.Hands(
                     mp_hands.HAND_CONNECTIONS,
                     mp_drawing_styles.get_default_hand_landmarks_style(),
                     mp_drawing_styles.get_default_hand_connections_style())
-        cv2.imshow('MediaPipe Hands', cv2.flip(image, 1))
-        if current_hand_landmarks is not None:
-            # crop_and_predict(image, current_hand_landmarks)
-            hand_image = cv2.resize(image, (224, 224), interpolation=cv2.INTER_AREA)
-            # Show the image in a window
-            cv2.imshow('Webcam Image', hand_image)
-            # Make the image a numpy array and reshape it to the models input shape.
-            hand_image = np.asarray(hand_image, dtype=np.float32).reshape(1, 224)
-            # Normalize the image array
-            hand_image = (hand_image / 127.5) - 1
-            # Have the model predict what the current image is. Model.predict
-            # returns an array of percentages. Example:[0.2,0.8] meaning its 20% sure
-            # it is the first label and 80% sure its the second label.
-            probabilities = model.predict(hand_image)
-            # Print what the highest value probabilitie label
-            print(labels[np.argmax(probabilities)])
-            # Listen to the keyboard for presses.
-            keyboard_input = cv2.waitKey(1)
-            # 27 is the ASCII for the esc key on your keyboard.
-            if keyboard_input == 27:
-                break
-
-        cv2.waitKey(1)
+                image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+                cv2.imshow('MediaPipe Hands', cv2.flip(image, 1))
+                if current_hand_landmarks is not None:
+                    hand_image = cv2.resize(image, (224, 224), interpolation=cv2.INTER_AREA)
+                    # Show the image in a window
+                    cv2.imshow('Webcam Image', hand_image)
+                    # Make the image a numpy array and reshape it to the models input shape.
+                    hand_image = np.asarray(hand_image, dtype=np.float32)
+                    hand_image = hand_image.reshape(1, 224, 224, 3)
+                    # Normalize the image array
+                    hand_image = (hand_image / 127.5) - 1
+                    probabilities = model.predict(hand_image)
+                    print(labels[np.argmax(probabilities)])
+                    keyboard_input = cv2.waitKey(1)
+                    if keyboard_input == 27:
+                        break
+            cv2.waitKey(1)
     cap.release()
     cv2.destroyAllWindows()

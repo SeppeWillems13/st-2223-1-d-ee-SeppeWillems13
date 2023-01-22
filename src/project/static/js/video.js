@@ -109,6 +109,15 @@ let playGame = async () => {
                         playerctx.fillText(data.computer_move, canvas.width - 200, 50)
                     }
                     if (data.game_over) {
+
+                        player1Score.textContent = score.User;
+                        player2Score.textContent = score.Computer;
+                        roundCount.textContent = data.result;
+
+                        playerctx.fillText(data.player_move, 10, 50)
+                        playerctx.fillText(data.confidence_score, 10, 100)
+                        playerctx.fillText(data.computer_move, canvas.width - 200, 50)
+
                         roundOrResult.textContent = "Game Over:";
                         let winner = data.winner;
                         roundCount.textContent = "You " + winner + "!";
@@ -177,15 +186,6 @@ const eventSource = new EventSource("/stream/");
 eventSource.onmessage = function(event) {
     // Call the updatePlayersList() function when an event is detected
     updatePlayersList();
-}
-
-function updatePlayersList() {
-    fetch("/api/players/")
-    .then(response => response.json())
-    .then(data => {
-        // code to update the players list on the page
-        // with the data returned from the API call
-    });
 }
 
 

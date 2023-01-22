@@ -152,7 +152,6 @@ def deleteGame(request, pk):
     return render(request, 'base/delete.html', {'obj': game})
 
 
-
 @login_required(login_url='login')
 def updateUser(request):
     user = request.user

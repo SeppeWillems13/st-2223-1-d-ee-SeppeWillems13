@@ -159,18 +159,39 @@ let addAnswer = async (answer) => {
 function updatePlayersList(newPlayer, MemberId) {
     // Get the players list element from the HTML template
     let playersList = document.getElementById('participants__list');
-    console.log(playersList)
-    // Create a new player element
-    let newPlayerElement = document.createElement('li');
+    let newPlayerElement = document.createElement('a');
+    newPlayerElement.classList.add('participant');
     newPlayerElement.id = `player-${MemberId}`;
-    newPlayerElement.innerHTML = newPlayer.name;
+    newPlayerElement.href = `/user/${MemberId}`;
+
+    let newPlayerAvatar = document.createElement('div');
+    newPlayerAvatar.classList.add('avatar');
+    newPlayerAvatar.classList.add('avatar--medium');
+
+    let newPlayerAvatarImg = document.createElement('img');
+    newPlayerAvatarImg.src = `https://picsum.photos/200/300?random=${MemberId}`;
+
+    newPlayerAvatar.appendChild(newPlayerAvatarImg);
+
+    let newPlayerName = document.createElement('p');
+    newPlayerName.innerHTML = newPlayer.name;
+
+    let newPlayerUsername = document.createElement('span');
+    newPlayerUsername.innerHTML = `@${MemberId}`;
+
+    newPlayerName.appendChild(newPlayerUsername);
+
+    newPlayerElement.appendChild(newPlayerAvatar);
+    newPlayerElement.appendChild(newPlayerName);
 
     // Add the new player element to the players list
     playersList.appendChild(newPlayerElement);
 
-    // Update the player count displayed in the HTML template
     let playerCount = document.getElementById('player-count');
+    console.log(playerCount)
     if (playerCount) {
+        console.log("playerCount:")
+        console.log(playerCount)
         playerCount.innerHTML = parseInt(playerCount.innerHTML) + 1;
     }
 }

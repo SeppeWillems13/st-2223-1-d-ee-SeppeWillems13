@@ -40,9 +40,9 @@ class random_prediction:
 
 
 # Set the directories where the images are located
-paper_dir = '../image_data/paper'
-scissors_dir = '../image_data/scissors'
-rock_dir = '../image_data/rock'
+paper_dir = '../new_image_data/paper'
+scissors_dir = '../new_image_data/scissors'
+rock_dir = '../new_image_data/rock'
 
 # Set the directory where the shuffled images will be saved
 prediction_dir = 'prediction_unlabeled_images'
