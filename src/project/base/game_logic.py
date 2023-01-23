@@ -206,7 +206,7 @@ def play_round_online(request, game_id):
 
                 hand_image = draw_hand_box(annotated_image, hand_landmarks, image_height, image_width)
                 class_name, confidence_score = process_image(hand_image, False)
-S
+
             # if confidence_score is less than 0.5, return error
             print(f"Confidence score: {confidence_score}")
             if confidence_score < 0.70:
