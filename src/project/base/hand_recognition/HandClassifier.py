@@ -9,7 +9,7 @@ class HandClassifier:
     def __init__(self, dark_mode=False):
         # Get the absolute paths to the model and labels files
         if dark_mode:
-            #TODO scissors hand palm facing webcam 99% hand THIS IS WRONG
+            # TODO scissors hand palm facing webcam 99% hand THIS IS WRONG
             model_path = os.path.abspath('keras/keras_dark_model.h5')
         else:
             model_path = os.path.abspath('keras/keras_model_second.h5')

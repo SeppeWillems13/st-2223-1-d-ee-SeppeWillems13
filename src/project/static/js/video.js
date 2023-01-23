@@ -26,26 +26,13 @@ let constraints = {
     audio: false
 }
 
-
-let playerScore = 0;
-let opponentScore = 0;
-
-function updatePlayerScore() {
-    playerScore++;
-    document.querySelector('.player-count').textContent = playerScore;
-}
-
-function updateOpponentScore() {
-    opponentScore++;
-    document.querySelector('.opponent-count').textContent = opponentScore;
-}
-
-
 let leaveChannel = async () => {
     let room_code = getRoomId();
     console.log("Leaving room...");
+    if (channel) {
     await channel.leave();
     await client.logout();
+    }
     // Use the fetch API to call the leave_room view
     fetch('/leave_room/' + room_code + '/', {
         method: 'POST',
@@ -92,9 +79,6 @@ window.addEventListener('beforeunload', leaveChannel)
 
 const camera_button = document.getElementById('camera-btn')
 camera_button.addEventListener('click', toggleCamera)
-
-const play_button = document.getElementById('play-btn')
-play_button.addEventListener('click', playGame)
 
 const leave_button = document.getElementById('leave-btn')
 leave_button.addEventListener('click', leaveChannel)

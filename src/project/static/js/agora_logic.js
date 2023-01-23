@@ -5,7 +5,10 @@ let client;
 let channel
 let remoteStream;
 let peerConnection;
-let opponentId;
+let opponentId
+
+let playersList = document.getElementById('participants__list');
+
 const servers = {
     iceServers: [{
         urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302']
@@ -29,27 +32,32 @@ let handleUserLeft = (MemberId) => {
     let playerCount = document.getElementById('player-count');
     if (playerCount) {
         let count = parseInt(playerCount.innerHTML.substring(1, playerCount.innerHTML.indexOf(" ")));
-        count--;
-        playerCount.innerHTML = "(" + count + " Joined)";
+        if (count > 2) {
+            count = 2;
+        }
+        count = Math.max(0, count - 1);
+        playerCount.innerHTML = `(${count})`;
     }
 }
 
 
 
 let handleMessageFromPeer = async (message, MemberId) => {
-
+    opponentId = MemberId
     message = JSON.parse(message.text)
     if (message.type === 'newPlayer') {
         // Extract the new player's information from the message
         var user_id = document.getElementById("user_id").value;
         updatePlayersList(user_id);
-        opponentId = MemberId;
     }
 
     if (message.type === 'startGame') {
         console.log("STARTING GAME")
         console.log("game id:")
         console.log(message.game_id)
+        let host_id = document.getElementById('host_id').value
+        let current_user_id = document.getElementById('current_user_id').value
+        if(host_id == current_user_id){
         let playButton = document.getElementById('start-btn');
         if (playButton) {
             playButton.style.display = 'none';
@@ -57,11 +65,12 @@ let handleMessageFromPeer = async (message, MemberId) => {
         let shuffleButton = document.getElementById('play-btn');
         if (shuffleButton) {
             shuffleButton.style.display = 'block';
+            }
         }
     }
 
-    if (message.type === 'playRound') {
-        console.log("PLAYING ROUND")
+    if (message.type === 'startRound') {
+        updateScoreboard(message);
     }
 
     if (message.type === 'offer') {
@@ -79,6 +88,25 @@ let handleMessageFromPeer = async (message, MemberId) => {
     }
 }
 
+function updateScoreboard(data) {
+    let playerMove = data.player_move;
+    let oppsMove = data.opps_move;
+    let result = data.result;
+    let score = data.score;
+
+    // update the round count on the scoreboard
+    let roundCount = document.querySelector('.Round-count');
+    roundCount.innerHTML = `${playerMove} vs ${oppsMove} - ${result}`;
+
+    // update the player and computer scores on the scoreboard
+    let playerCount = document.querySelector('.Player-count');
+    playerCount.innerHTML = score.User;
+
+    let computerCount = document.querySelector('.Computer-count');
+    computerCount.innerHTML = score.User2;
+}
+
+
 let handleGameStarted = async (MemberId) => {
     let playButton = document.getElementById('start-button');
     if (playButton) {
@@ -95,7 +123,13 @@ let handleGameStarted = async (MemberId) => {
     }, MemberId);
 }
 
-
+let handleRoundStarted = async (MemberId) => {
+    client.sendMessageToPeer({
+        text: JSON.stringify({
+            'type': 'startRound'
+        })
+    }, MemberId);
+}
 
 let handleUserJoined = async (MemberId) => {
     createOffer(MemberId);
@@ -208,12 +242,13 @@ let updatePlayersList = (MemberId) => {
         .then(data => {
             console.log("USER SPECIFIC DATA:");
             console.log(data);
-            // Get the players list element from the HTML template
+
             let playersList = document.getElementById('participants__list');
+            // Get the players list element from the HTML template
             let newPlayerElement = document.createElement('a');
             newPlayerElement.classList.add('participant');
             newPlayerElement.id = `player-${MemberId}`;
-            newPlayerElement.href = `/user/${MemberId}`;
+            newPlayerElement.href = `/profile/${MemberId}`;
 
             let newPlayerAvatar = document.createElement('div');
             newPlayerAvatar.classList.add('avatar');
@@ -241,7 +276,7 @@ let updatePlayersList = (MemberId) => {
             let playerCount = document.getElementById('player-count');
             if (playerCount) {
                 let count = parseInt(playerCount.innerHTML.substring(1, playerCount.innerHTML.indexOf(" ")));
-                count++;
+                count = count + 1 > 2 ? 2 : count + 1 < 0 ? 0 : count + 1;
                 playerCount.innerHTML = "(" + count + " Joined)";
             }
         });

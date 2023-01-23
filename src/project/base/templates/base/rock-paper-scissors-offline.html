@@ -6,10 +6,15 @@
         <table>
             <thead>
             <td>Player</td>
-            <td id="roundOrResult">Round</td>
+            <td id="roundOrResult">Round X</td>
             <td>Computer</td>
             </thead>
             <tbody>
+            <tr>
+                <td class="Player-move"></td>
+                <td id="Played-move"></td>
+                <td class="Computer-move"></td>
+            </tr>
             <tr>
                 <td class="Player-count">0</td>
                 <td class="Round-count"></td>
@@ -49,6 +54,7 @@
 <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
 <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
 <script src="{% static 'js/agora-rtm-sdk-1.5.1.js' %}"></script>
+<script src="{% static 'js/agora_logic.js'%}"></script>
 <script src="{% static 'js/video.js' %}"></script>
 
 <script>
@@ -137,7 +143,7 @@ let playGame = async () => {
         canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
         const imgData = canvasElement.toDataURL('image/jpeg', 0.5);
         if (!screenshotSent) {
-            fetch('/play_round_offline/' + game_id + '/', {
+            fetch('/get_round_prediction_offline/' + game_id + '/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -214,6 +220,8 @@ let playGame = async () => {
 const start_button = document.getElementById('start-btn')
 start_button.addEventListener('click', startGame)
 
+const play_button = document.getElementById('play-btn')
+play_button.addEventListener('click', playGame)
 init()
 
 </script>

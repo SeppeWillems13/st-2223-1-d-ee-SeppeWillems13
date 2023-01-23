@@ -12,7 +12,7 @@
         </div>
     </div>
     <div class="roomListRoom__content">
-        <a href="{% url 'room' room.code %}">{{room.name}}<small> ({{room.online|yesno:"Online,Offline"}})</small></a>
+        <a href="{% url 'room' room.code %}">{{room.name}}<small> ({{room.is_online|yesno:"Online,Offline"}})</small></a>
     </div>
     <div class="roomListRoom__meta">
         <a class="roomListRoom__joined" href="{% url 'room' room.code %}">
@@ -31,8 +31,8 @@
                         d="M12 16c3.859 0 7-3.141 7-7s-3.141-7-7-7c-3.859 0-7 3.141-7 7s3.141 7 7 7zM12 4c2.757 0 5 2.243 5 5s-2.243 5-5 5-5-2.243-5-5c0-2.757 2.243-5 5-5z">
                 </path>
             </svg>
-<!--            TODO : Add number of joined users and if joinable-->
-            Joinable???
+            <span>HOST: {{room.host.username}}</span>
+
         </a>
     </div>
 </div>

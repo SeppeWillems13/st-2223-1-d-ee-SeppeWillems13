@@ -55,7 +55,7 @@
             <div class="room__box scroll">
                 <div class="room__header scroll">
                     <div class="room__info">
-                        <h3>{{room.name}} <small>({{room.online|yesno:"Online,Offline"}})</small></h3>
+                        <h3>{{room.name}} <small>({{room.is_online|yesno:"Online,Offline"}})</small></h3>
                         <span>{{room.created|timesince}} ago</span>
                     </div>
                     <div class="room__hosted">
@@ -69,7 +69,7 @@
                         </a>
                     </div>
                 </div>
-                {% if room.online %}
+                {% if room.is_online %}
                     {% include 'base/rock-paper-scissors-online.html' with players_json=players_json %}
                 {% else %}
                     {% include 'base/rock-paper-scissors-offline.html' with players_json=players_json %}

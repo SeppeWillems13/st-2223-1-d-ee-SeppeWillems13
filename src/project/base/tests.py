@@ -15,17 +15,17 @@ class RoomModelTests(TestCase):
 
         self.assertEqual(new_room.name, "Test Room 3")
         self.assertEqual(new_room.code, "testcode3")
-        self.assertEqual(new_room.online, True)
+        self.assertEqual(new_room.is_online, True)
 
     def test_update_room(self):
         self.room1.name = "Updated Test Room 1"
         self.room1.code = "updatedtestcode1"
-        self.room1.online = False
+        self.room1.is_online = False
         self.room1.save()
 
         self.assertEqual(self.room1.name, "Updated Test Room 1")
         self.assertEqual(self.room1.code, "updatedtestcode1")
-        self.assertEqual(self.room1.online, False)
+        self.assertEqual(self.room1.is_online, False)
 
     def test_delete_room(self):
         self.room1.delete()

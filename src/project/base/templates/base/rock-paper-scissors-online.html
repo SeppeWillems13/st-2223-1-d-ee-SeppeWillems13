@@ -1,7 +1,8 @@
 {% load static %}
 {% csrf_token %}
-<input type="hidden" id="user_id" value="{{user_id}}">
-
+<input type="hidden" id="host_id" value="{{host_id}}">
+<input type="hidden" id="opponent_id" value="{{opponent_id}}">
+<input type="hidden" id="current_user_id" value="{{current_user_id}}">
 <div class="room__conversation">
     <div class="scoreboard">
         <h2 id="best-of">Scoreboard: Best of:</h2>
@@ -83,20 +84,35 @@ let init = async () => {
     channel.on('MemberJoined', handleUserJoined)
     channel.on('MemberLeft', handleUserLeft)
     channel.on('GameStarted', handleGameStarted)
+    channel.on('startRound', handleRoundStarted)
+
 
     client.on('MessageFromPeer', handleMessageFromPeer)
 
     localStream = await navigator.mediaDevices.getUserMedia(constraints)
     document.getElementById('user-1').srcObject = localStream
+    //check if the current user is the host
+    let host_id = document.getElementById('host_id').value
+    let current_user_id = document.getElementById('current_user_id').value
 
+    console.log(host_id)
+    console.log("EQUALS")
+    console.log(current_user_id)
+    if(host_id == current_user_id) {
+        document.getElementById('start-btn').style.display = 'block';
+    } else {
+        document.getElementById('start-btn').style.display = 'none';
+    }
     play_button.style.display = 'none';
 }
 
 
 let startGame = async (players) => {
-    var players_json = JSON.parse('{{ players_json | safe }}')
-    console.log(players_json)
-    if (players_json.length === 2) {
+    let host_id = document.getElementById('host_id').value
+    let opponent_id = document.getElementById('opponent_id').value
+    console.log(host_id)
+    console.log(opponent_id)
+    if (host_id && opponent_id) {
         // check if the current user is a player in the room
         bestOf = prompt("Best of how many games? (1, 3, 5, 7, 9, 11, 13)");
         // only prompts once it needs to keep until a valid number is entered
@@ -113,14 +129,15 @@ let startGame = async (players) => {
             },
             body: JSON.stringify({
                 bestOf: bestOf,
-                players: players_json
+                host_id: host_id,
+                opponent_id: opponent_id
             })
         });
         let data = await response.json();
         if (data.success) {
             client.sendMessageToPeer({
                 text: JSON.stringify({
-                    'type': 'startGame',
+                    'type': 'GameStarted',
                     'game_id': data.game_id,
                 })
             }, opponentId);
@@ -132,11 +149,11 @@ let startGame = async (players) => {
             console.log(data);
         } else {
             console.log("Error starting game: " + data.message);
-        }
-    } else {
-        alert('You need to wait for another player to join the room')
+        }}else{
+            alert("You are not a player in this room")
+            }
     }
-}
+
 
 let playGame = async () => {
     let video = document.getElementById('user-1');
@@ -173,6 +190,13 @@ let playGame = async () => {
     }
 
     function takeScreenshot() {
+        const canvasElement_user2 = document.createElement('canvas');
+        canvasElement_user2.width = videoElement_user2.videoWidth;
+        canvasElement_user2.height = videoElement_user2.videoHeight;
+        const canvasCtx_user2 = canvasElement_user2.getContext('2d');
+        canvasCtx_user2.drawImage(videoElement_user2, 0, 0, canvasElement_user2.width, canvasElement_user2.height);
+        const imgData_user2 = canvasElement_user2.toDataURL('image/jpeg', 0.5);
+
         const canvasElement = document.createElement('canvas');
         canvasElement.width = videoElement.videoWidth;
         canvasElement.height = videoElement.videoHeight;
@@ -180,27 +204,35 @@ let playGame = async () => {
         canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
         const imgData = canvasElement.toDataURL('image/jpeg', 0.5);
 
-        const canvasElement_user2 = document.createElement('canvas');
-        canvasElement.width = videoElement_user2.videoWidth;
-        canvasElement.height = videoElement_user2.videoHeight;
-        const canvasCtx_user2 = canvasElement.getContext('2d');
-        canvasCtx.drawImage(videoElement_user2, 0, 0, canvasElement_user2.width, canvasElement_user2.height);
-        const imgData_user2 = canvasElement_user2.toDataURL('image/jpeg', 0.5);
-
+        console.log(imgData_user2);
+        console.log(imgData);
         if (!screenshotSent) {
-            fetch('/play_round_online/' + game_id + '/', {
+            fetch('/get_round_prediction_online/' + game_id + '/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRFToken': csrftoken
                     },
                     body: JSON.stringify({
-                        screenshot: imgData
-                        screenshot_user2: imgData_user2
+                        screenshot1: imgData,
+                        screenshot2: imgData_user2
                     })
                 })
                 .then(response => response.json())
                 .then(data => {
+            if (data.success) {
+            console.log("DAAAAAATAAAAAA");
+            console.log(data);
+            client.sendMessageToPeer({
+                text: JSON.stringify({
+                    'type': 'startRound',
+                    'your_move': data.opps_move,
+                    'opps_move': data.player_move,
+                    'score': data.score,
+                    'result': data.result,
+                    'game_over': data.game_over,
+                })
+            }, opponentId);}
                     console.log(data);
                     let score = data.score;
                     let player1Score = document.getElementsByClassName("Player-count")[0];
@@ -216,13 +248,6 @@ let playGame = async () => {
                         playerctx.fillText(data.computer_move, canvas.width - 200, 50)
                         // extract move information from data
                         let move = data.player_move;
-                        // send move information to other player
-                        client.sendMessageToPeer({
-                            text: JSON.stringify({
-                                'type': 'move',
-                                'move': move
-                            })
-                        }, opponentId);
                     }
                     if (data.game_over) {
                         // rest of the code here
@@ -234,9 +259,7 @@ let playGame = async () => {
         }
     }
 
-
-
-    countDown(1);
+    countDown(3);
 
     const camera = new Camera(videoElement, {
         onFrame: async () => {},
@@ -244,10 +267,13 @@ let playGame = async () => {
         height: 720
     });
     camera.start();
-}
+};
 
 const start_button = document.getElementById('start-btn')
 start_button.addEventListener('click', startGame)
+
+const play_button = document.getElementById('play-btn')
+play_button.addEventListener('click', playGame)
 
 init();
 </script>

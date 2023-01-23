@@ -12,12 +12,18 @@ class MyUserCreationForm(UserCreationForm):
 
 
 class RoomForm(ModelForm):
+    def __init__(self, *args, **kwargs):
+        host_id = kwargs.pop('host_id')
+        super().__init__(*args, **kwargs)
+        self.fields['opponent'].queryset = User.objects.exclude(pk=host_id)
+
     class Meta:
         model = Room
-        fields = ['name', 'code', 'online']
+        fields = ['name', 'code', 'is_online', 'opponent']
         exclude = ("host",)
         widgets = {
-            'online': forms.Select(choices=[(True, 'Online'), (False, 'Offline')]),
+            'is_online': forms.Select(choices=[(True, 'Online'), (False, 'Offline')]),
+            'opponent': forms.Select(),
             'code': forms.TextInput(attrs={'required': 'true'}),
             'name': forms.TextInput(attrs={'required': 'true'}),
         }

@@ -13,36 +13,25 @@ from .models import Room, Player
 @login_required(login_url='login')
 def leave_room(request, room_code):
     if request.method == 'POST':
-        try:
-            room = Room.objects.get(code=room_code)
-            player = Player.objects.get(user=request.user)
-            room.players.remove(player)
-            room.save()
-            return JsonResponse({"success": True, "message": "You have successfully left the room."})
-        except Room.DoesNotExist:
-            return JsonResponse({"success": False, "message": "The room you are trying to leave does not exist."})
-        except Player.DoesNotExist:
-            return JsonResponse({"success": False, "message": "The player trying to leave the room does not exist."})
+        return JsonResponse({"success": True, "message": "You have successfully left the room."})
     return HttpResponse('You are not allowed to access this page.')
 
 
 def createRoom(request):
     if request.method == 'POST':
-        form = RoomForm(request.POST)
+        form = RoomForm(request.POST or None, host_id=request.user.id)
+        print(form.errors)
         if form.is_valid():
             _room = form.save(commit=False)
             _room.host = request.user
             _room.save()
 
-            player = Player.objects.get(user=request.user)
-            _room.players.add(player)
-
             messages.success(request, 'Room created successfully')
-            return redirect('home')
+            return redirect('room', pk=_room.code)
         else:
             messages.error(request, 'An error occurred while creating the _room')
     else:
-        form = RoomForm()
+        form = RoomForm(host_id=request.user.id)
 
     template_name = 'base/room_form.html'
     context = {'form': form}

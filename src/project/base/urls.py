@@ -25,7 +25,8 @@ urlpatterns = [
 
     path('start_game_offline/<str:room_id>', views.start_game_offline, name='start_game_offline'),
     path('start_game_online/<str:room_id>', views.start_game_online, name='start_game_online'),
-    path('play_round_offline/<str:game_id>/', game_logic.play_round_offline, name='play_round_offline'),
+    path('get_round_prediction_offline/<str:game_id>/', game_logic.get_round_prediction_offline, name='get_round_prediction_offline'),
+    path('get_round_prediction_online/<str:game_id>/', game_logic.get_round_prediction_online, name='get_round_prediction_online'),
     path('game_detail/<str:game_id>/', views.game_detail, name='game_detail'),
     path('get_user/<str:member_id>/', user_logic.get_user, name='get_user'),
 ]

@@ -10,7 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.core import serializers
 from django.db.models import Q
 from django.forms import model_to_dict
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
@@ -116,20 +116,34 @@ def room(request, pk):
             messages.error(request, 'The message cannot be empty')
         else:
             return redirect(reverse('room', args=[pk]))
-
-    players = Player.objects.filter(room=_room)
-    if request.user not in [player.user for player in players]:
-        player = Player.objects.get(user=request.user)
-        _room.players.add(player)
-        print(_room.players.all())
+    print('request user', request.user)
+    if request.user != _room.host and not _room.is_online:
+        print('not is_online')
+        return room_not_found(request, pk)
+    if request.user != _room.host and not _room.is_online and _room.opponent is not None:
+        print('opponent not none')
+        return room_not_found(request, pk)
+    # if request user is not host and is is_online and opponent is None add user to opponent and save and join room
+    if request.user != _room.host and _room.is_online and _room.opponent is None:
+        print('opponent none you are opponent')
+        _room.opponent = request.user
         _room.save()
-
+        return render(request, template_name, {'room': _room})
     room_games = _room.game_set.select_related('user').all()
+    players = Player.objects.filter(Q(user=_room.host) | Q(user=_room.opponent))
+    print('players', players)
     players_json = serializers.serialize("json", players)
-
-    user_id = json.dumps(request.user.id)
+    host_id = json.dumps(_room.host.id)
+    current_user_id = json.dumps(request.user.id)
+    if _room.opponent is not None:
+        opponent_id = json.dumps(_room.opponent.id)
+    else:
+        opponent_id = None
     context = {'room': _room, 'room_games': room_games,
-               'players': players, 'players_json': players_json, 'user_id': user_id}
+               'players': players, 'players_json': players_json,
+               'host_id': host_id, 'opponent_id': opponent_id, 'current_user_id': current_user_id}
+
+    print("is online", _room.is_online)
     return render(request, template_name, context)
 
 
@@ -228,9 +242,9 @@ def start_game_online(request, room_id):
             old_game.game_status = 'Abandoned'
             old_game.save()
 
-        players = json.loads(request.body).get('players')
-        player_ids = [player['pk'] for player in players]
-        users = User.objects.filter(id__in=player_ids)
+        host_id = json.loads(request.body).get('host_id')
+        opponent_id = json.loads(request.body).get('opponent_id')
+        users = User.objects.filter(Q(id=host_id) | Q(id=opponent_id))
         opponent = users[0]
         if opponent == _room.host:
             opponent = users[1]

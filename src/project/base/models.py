@@ -42,15 +42,17 @@ class User(AbstractUser):
     email = models.EmailField(unique=True, null=True)
     avatar = models.ImageField(null=True, default="avatar.svg")
 
+    # TODO COMMENT OUT WHEN NEW MIGRATIONS CREATING SUPERUSER
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
 
 
 class Room(models.Model):
     host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hosted_rooms')
+    opponent = models.ForeignKey(User, on_delete=models.CASCADE, related_name='joined_rooms', null=True, blank=True)
     name = models.CharField(max_length=200, blank=True)
     code = models.CharField(max_length=20, blank=True, primary_key=True, unique=True)
-    online = models.BooleanField()
+    is_online = models.BooleanField()
     updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
 
@@ -83,6 +85,8 @@ class Game(models.Model):
 
 class Round(models.Model):
     round_number = models.IntegerField(default=0)
+    host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='host_rounds')
+    opponent = models.ForeignKey(User, on_delete=models.CASCADE, related_name='opponent_rounds', null=True, blank=True)
     game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='rounds')
     player_move = models.CharField(max_length=20, choices=GAME_MOVE_CHOICES)
     opponent_move = models.CharField(max_length=20, choices=GAME_MOVE_CHOICES)
@@ -98,7 +102,6 @@ class Round(models.Model):
 
 class Player(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
-    room = models.ManyToManyField(Room, related_name='players', null=True, blank=True)
     wins = models.IntegerField(default=0, null=True, blank=True)
     losses = models.IntegerField(default=0, null=True, blank=True)
     games = models.ManyToManyField(Game, related_name='players', null=True, blank=True)

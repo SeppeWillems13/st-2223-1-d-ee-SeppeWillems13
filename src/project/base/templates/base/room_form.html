@@ -23,11 +23,11 @@
                 <form action="" class="form" method="POST">
                     {% csrf_token %}
                     <div class="form__group">
-                        {{ form.online.label }}
-                        {{ form.online }}
-                        {% if form.online.errors %}
+                        {{ form.is_online.label }}
+                        {{ form.is_online }}
+                        {% if form.is_online.errors %}
                         <ul class="errorlist">
-                            {% for error in form.online.errors %}
+                            {% for error in form.is_online.errors %}
                             <li>{{ error }}</li>
                             {% endfor %}
                         </ul>
@@ -46,6 +46,11 @@
                         {{ form.name.label }}
                         {{ form.name }}
                     </div>
+
+                    <div class="form__group">
+                        {{ form.opponent.label }}
+                        {{ form.opponent }}
+                    </div>
                     <div class="form__action">
                         <a class="btn btn--dark" href="{{request.META.HTTP_REFERER}}">Cancel</a>
                         <button class="btn btn--main" type="submit">Create</button>
@@ -56,4 +61,10 @@
     </div>
 </main>
 
+
+<script>
+
+</script>
+
+</script>
 {% endblock content %}
