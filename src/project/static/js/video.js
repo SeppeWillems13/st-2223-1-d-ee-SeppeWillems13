@@ -27,31 +27,11 @@ let constraints = {
 }
 
 let leaveChannel = async () => {
-    let room_code = getRoomId();
-    console.log("Leaving room...");
     if (channel) {
     await channel.leave();
     await client.logout();
     }
-    // Use the fetch API to call the leave_room view
-    fetch('/leave_room/' + room_code + '/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrftoken,
-            'Accept': 'application/json'
-        }
-    }).then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            console.log(data.message);
-            window.location.href = '/';
-        } else {
-            console.error(data.message);
-        }
-    }).catch(error => {
-        console.error('There has been a problem with your fetch operation:',error);
-    });
+    window.location.href = '/';
 }
 
 
@@ -75,10 +55,9 @@ let toggleCamera = async () => {
     }
 }
 
-window.addEventListener('beforeunload', leaveChannel)
-
 const camera_button = document.getElementById('camera-btn')
 camera_button.addEventListener('click', toggleCamera)
 
+window.addEventListener('beforeunload', leaveChannel)
 const leave_button = document.getElementById('leave-btn')
 leave_button.addEventListener('click', leaveChannel)

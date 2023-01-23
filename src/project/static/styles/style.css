@@ -969,8 +969,7 @@ a {
     background: var(--color-dark);
     z-index: 999;
     top: 4.4rem;
-    padding-top: 2rem;
-    padding-bottom: 1rem;
+    padding-top: 1rem;
 }
 
 @media screen and (max-width: 500px) {
@@ -1041,7 +1040,7 @@ a {
 
 .room__conversation {
     margin-top: 1rem;
-    margin-bottom: 4rem;
+    margin-bottom: 1rem;
 }
 
 .threads h3 {

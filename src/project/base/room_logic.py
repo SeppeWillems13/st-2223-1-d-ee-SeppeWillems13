@@ -10,13 +10,6 @@ from .forms import RoomForm
 from .models import Room, Player
 
 
-@login_required(login_url='login')
-def leave_room(request, room_code):
-    if request.method == 'POST':
-        return JsonResponse({"success": True, "message": "You have successfully left the room."})
-    return HttpResponse('You are not allowed to access this page.')
-
-
 def createRoom(request):
     if request.method == 'POST':
         form = RoomForm(request.POST or None, host_id=request.user.id)

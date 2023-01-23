@@ -13,7 +13,6 @@ urlpatterns = [
     path('profile/<str:pk>/', views.userProfile, name="user-profile"),
 
     path('join-room/str:code/', room_logic.joinRoom, name="join-room"),
-    path('leave_room/<str:room_code>/', room_logic.leave_room, name='leave_room'),
     path('create-room/', room_logic.createRoom, name="create-room"),
     path('update-room/<str:pk>/', room_logic.updateRoom, name="update-room"),
     path('delete-room/<str:pk>/', room_logic.deleteRoom, name="delete-room"),
