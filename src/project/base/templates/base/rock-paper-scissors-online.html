@@ -3,6 +3,8 @@
 <input type="hidden" id="host_id" value="{{host_id}}">
 <input type="hidden" id="opponent_id" value="{{opponent_id}}">
 <input type="hidden" id="current_user_id" value="{{current_user_id}}">
+
+<div id="alert-container"></div>
 <div class="room__conversation">
     <div class="scoreboard">
         <h2 id="best-of">Scoreboard: Best of:</h2>
@@ -52,6 +54,7 @@
 <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"></script>
 <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
 <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
 <script src="{% static 'js/video.js' %}"></script>
 <script src="{% static 'js/agora-rtm-sdk-1.5.1.js' %}"></script>
 <script src="{% static 'js/agora_logic.js'%}"></script>
@@ -83,7 +86,7 @@ let init = async () => {
 
     channel.on('MemberJoined', handleUserJoined)
     channel.on('MemberLeft', handleUserLeft)
-    channel.on('GameStarted', handleGameStarted)
+    channel.on('startGame', handleGameStarted)
     channel.on('startRound', handleRoundStarted)
 
 
@@ -137,10 +140,11 @@ let startGame = async (players) => {
         if (data.success) {
             client.sendMessageToPeer({
                 text: JSON.stringify({
-                    'type': 'GameStarted',
+                    'type': 'startGame',
                     'game_id': data.game_id,
                 })
             }, opponentId);
+
             console.log("Game started successfully");
             play_button.style.display = 'block'
             start_button.style.display = 'none'
@@ -221,8 +225,6 @@ let playGame = async () => {
                 .then(response => response.json())
                 .then(data => {
             if (data.success) {
-            console.log("DAAAAAATAAAAAA");
-            console.log(data);
             client.sendMessageToPeer({
                 text: JSON.stringify({
                     'type': 'startRound',
@@ -240,13 +242,6 @@ let playGame = async () => {
                     let player2Score = document.getElementsByClassName("Computer-count")[0];
                     let roundOrResult = document.getElementById("roundOrResult");
                     if (data.hands_detected) {
-                        player1Score.textContent = score.User;
-                        player2Score.textContent = score.Computer;
-                        roundCount.textContent = data.result;
-                        playerctx.fillText(data.player_move, 10, 50)
-                        playerctx.fillText(data.confidence_score, 10, 100)
-                        playerctx.fillText(data.computer_move, canvas.width - 200, 50)
-                        // extract move information from data
                         let move = data.player_move;
                     }
                     if (data.game_over) {

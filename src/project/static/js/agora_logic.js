@@ -47,30 +47,60 @@ let handleMessageFromPeer = async (message, MemberId) => {
     message = JSON.parse(message.text)
     if (message.type === 'newPlayer') {
         // Extract the new player's information from the message
-        var user_id = document.getElementById("user_id").value;
+        var user_id = document.getElementById("current_user_id").value;
         updatePlayersList(user_id);
     }
 
     if (message.type === 'startGame') {
-        console.log("STARTING GAME")
-        console.log("game id:")
-        console.log(message.game_id)
         let host_id = document.getElementById('host_id').value
         let current_user_id = document.getElementById('current_user_id').value
+
         if(host_id == current_user_id){
-        let playButton = document.getElementById('start-btn');
-        if (playButton) {
-            playButton.style.display = 'none';
-            }
-        let shuffleButton = document.getElementById('play-btn');
-        if (shuffleButton) {
-            shuffleButton.style.display = 'block';
-            }
+            let playButton = document.getElementById('start-btn');
+            if (playButton) {
+                playButton.style.display = 'none';
+                }
+            let shuffleButton = document.getElementById('play-btn');
+            if (shuffleButton) {
+                shuffleButton.style.display = 'block';
+                }
         }
+
+    Swal.fire({
+      title: 'Game Started!',
+      text: "Get ready to play!",
+      icon: 'success',
+      confirmButtonText: 'OK'
+    })
+
     }
 
     if (message.type === 'startRound') {
         updateScoreboard(message);
+        if (message.result === "Win") {
+            Swal.fire({
+                title: 'Round Results',
+                html: `Player chose: ${message.opps_move} <br> Opponent chose: ${message.your_move} <br> Result: ${message.result}`,
+                icon: 'success',
+                confirmButtonText: 'OK'
+            });
+        }
+        else if (message.result === "Lose") {
+            Swal.fire({
+                title: 'Round Results',
+                html: `Player chose: ${message.opps_move} <br> Opponent chose: ${message.your_move} <br> Result: ${message.result}`,
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        }
+        else if (message.result === "Tie") {
+            Swal.fire({
+                title: 'Round Results',
+                html: `Player chose: ${message.opps_move} <br> Opponent chose: ${message.your_move} <br> Result: ${message.result}`,
+                icon: 'warning',
+                confirmButtonText: 'OK'
+            });
+        }
     }
 
     if (message.type === 'offer') {
@@ -133,7 +163,7 @@ let handleRoundStarted = async (MemberId) => {
 
 let handleUserJoined = async (MemberId) => {
     createOffer(MemberId);
-    var user_id = document.getElementById("user_id").value;
+    var user_id = document.getElementById("current_user_id").value;
     let user
     fetch(`/get_user/` + user_id + `/`)
         .then(response => response.json())
