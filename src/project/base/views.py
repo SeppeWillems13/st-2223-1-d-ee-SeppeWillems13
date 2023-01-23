@@ -126,8 +126,10 @@ def room(request, pk):
 
     room_games = _room.game_set.select_related('user').all()
     players_json = serializers.serialize("json", players)
+
+    user_id = json.dumps(request.user.id)
     context = {'room': _room, 'room_games': room_games,
-               'players': players, 'players_json': players_json}
+               'players': players, 'players_json': players_json, 'user_id': user_id}
     return render(request, template_name, context)
 
 

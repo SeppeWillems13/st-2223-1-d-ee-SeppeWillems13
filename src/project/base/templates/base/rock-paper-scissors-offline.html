@@ -23,8 +23,7 @@
     <form enctype="multipart/form-data" method="POST">
         <div id="videos">
             <video autoplay class="video-player" id="user-1" playsinline></video>
-            <canvas id="canvas-user-1">
-            </canvas>
+            <canvas id="canvas-user-1"></canvas>
         </div>
         <div id="controls">
             <div class="control-container" id="camera-btn">
@@ -97,6 +96,119 @@ let startGame = async () => {
     } else {
         console.log("Error starting game: " + data.message);
     }
+}
+
+let playGame = async () => {
+    let video = document.getElementById('user-1');
+    let canvas = document.getElementById('canvas-user-1');
+    canvas.style.display = 'block'
+    canvas.width = video.clientWidth;
+    canvas.height = video.clientHeight;
+    canvas.style.position = 'absolute';
+    canvas.style.top = video.offsetTop + 'px';
+    canvas.style.left = video.offsetLeft + 'px';
+
+    let playerctx = canvas.getContext('2d');
+    const videoElement = document.getElementsByClassName('video-player')[0];
+
+    //set text on the playerctx canvas
+    playerctx.font = '48px serif';
+    playerctx.fillStyle = 'white';
+    //delete text from the canvas
+    playerctx.clearRect(0, 0, canvas.width, canvas.height);
+    let screenshotSent = false;
+
+    function countDown(count) {
+        if (count === 0) {
+            takeScreenshot();
+        } else {
+            console.log(count);
+            setTimeout(() => {
+                countDown(count - 1);
+            }, 1000);
+        }
+    }
+
+    function takeScreenshot() {
+        const canvasElement = document.createElement('canvas');
+        canvasElement.width = videoElement.videoWidth;
+        canvasElement.height = videoElement.videoHeight;
+        const canvasCtx = canvasElement.getContext('2d');
+        canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+        const imgData = canvasElement.toDataURL('image/jpeg', 0.5);
+        if (!screenshotSent) {
+            fetch('/play_round_offline/' + game_id + '/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken
+                    },
+                    body: JSON.stringify({
+                        screenshot: imgData
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    let score = data.score;
+                    let player1Score = document.getElementsByClassName("Player-count")[0];
+                    let roundCount = document.getElementsByClassName("Round-count")[0];
+                    let player2Score = document.getElementsByClassName("Computer-count")[0];
+                    let roundOrResult = document.getElementById("roundOrResult");
+                    if (data.hands_detected) {
+
+                        player1Score.textContent = score.User;
+                        player2Score.textContent = score.Computer;
+                        roundCount.textContent = data.result;
+
+                        playerctx.fillText(data.player_move, 10, 50)
+                        playerctx.fillText(data.confidence_score, 10, 100)
+                        playerctx.fillText(data.computer_move, canvas.width - 200, 50)
+                    }
+                    if (data.game_over) {
+
+                        player1Score.textContent = score.User;
+                        player2Score.textContent = score.Computer;
+                        roundCount.textContent = data.result;
+
+                        playerctx.fillText(data.player_move, 10, 50)
+                        playerctx.fillText(data.confidence_score, 10, 100)
+                        playerctx.fillText(data.computer_move, canvas.width - 200, 50)
+
+                        roundOrResult.textContent = "Game Over:";
+                        let winner = data.winner;
+                        roundCount.textContent = "You " + winner + "!";
+                        play_button.style.display = 'none'
+                        start_button.style.display = 'block'
+                        canvas.style.display = 'none'
+                    }
+                    if (!data.hands_detected) {
+                        alert("No hands detected. Please try again. Try in a brighter room.")
+                        screenshotSent = false;
+                    } else if (data.message === "Invalid move") {
+                        alert("Invalid move. Please try again.")
+                        screenshotSent = false;
+                    } else {
+                        screenshotSent = true;
+                    }
+                }).catch(error => {
+                    console.error(
+                        'There has been a problem with your fetch operation:',
+                        error
+                    );
+                });
+        }
+    }
+
+
+    countDown(1);
+
+    const camera = new Camera(videoElement, {
+        onFrame: async () => {},
+        width: 1280,
+        height: 720
+    });
+    camera.start();
 }
 
 const start_button = document.getElementById('start-btn')

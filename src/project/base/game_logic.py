@@ -78,7 +78,7 @@ def is_dark_image(image):
         return False
 
 
-def play_round(request, game_id):
+def play_round_offline(request, game_id):
     _game = Game.objects.get(id=game_id)
     if request.method == 'POST':
         # check if the game is still active and if the user is allowed to play
@@ -116,7 +116,8 @@ def play_round(request, game_id):
                 else:
                     cv2.imshow('is not dark image but also no hands', cv2.flip(resized_image, 1))
                     cv2.waitKey(0)
-                    return JsonResponse({'status': False, 'message': 'Image is too bright for dark mode but no hands detected'})
+                    return JsonResponse(
+                        {'status': False, 'message': 'Image is too bright for dark mode but no hands detected'})
             else:
                 image_height, image_width, _ = resized_image.shape
                 annotated_image = cv2.flip(resized_image.copy(), 1)
@@ -131,6 +132,81 @@ def play_round(request, game_id):
                 hand_image = draw_hand_box(annotated_image, hand_landmarks, image_height, image_width)
                 class_name, confidence_score = process_image(hand_image, False)
 
+            # if confidence_score is less than 0.5, return error
+            print(f"Confidence score: {confidence_score}")
+            if confidence_score < 0.70:
+                return JsonResponse(
+                    {'success': False, 'player_move': class_name, 'confidence_score': str(confidence_score),
+                     'hands_detected': True, 'score': _game.score})
+            else:
+                _round = Round.objects.create(game=_game)
+                play_offline_round(_round, class_name, game_id)
+                _round.save()
+                outcome = _round.outcome
+                computer_move = _round.opponent_move
+                game = Game.objects.get(id=game_id)
+                return JsonResponse(
+                    {'success': True, 'player_move': class_name, 'confidence_score': str(confidence_score),
+                     'hands_detected': True, 'computer_move': computer_move, 'result': outcome,
+                     'score': game.score, 'game_over': game.game_status == 'Completed', 'winner': game.result})
+    else:
+        return JsonResponse({'success': False, 'message': 'Game is already finished'})
+
+
+def play_round_online(request, game_id):
+    _game = Game.objects.get(id=game_id)
+    if request.method == 'POST':
+        # check if the game is still active and if the user is allowed to play
+        if _game.game_status == 'Completed' or _game.game_status == 'Abandoned':
+            return JsonResponse({'success': False, 'message': 'Game is not active'})
+
+        screenshot = json.loads(request.body)['screenshot']
+        resized_image = resize_screenshot(screenshot, 720, 720)
+
+        mp_hands = mp.solutions.hands
+        mp_drawing = mp.solutions.drawing_utils
+        mp_drawing_styles = mp.solutions.drawing_styles
+
+        # Run MediaPipe Hands.
+        with mp_hands.Hands(
+                static_image_mode=True,
+                max_num_hands=1,
+                min_detection_confidence=0.7) as hands:
+
+            # Convert the BGR image to RGB, flip the image around y-axis for correct
+            # handedness output and process it with MediaPipe Hands.
+            results = hands.process(cv2.flip(cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB), 1))
+            # results = hands.process(cv2.cvtColor(resized_image, cv2.COLOR_BGR2RGB))
+
+            if results.multi_hand_landmarks is None:
+                # show the image with the hand
+                if is_dark_image(resized_image):
+                    cv2.imshow('is dark image', cv2.flip(resized_image, 1))
+                    cv2.waitKey(0)
+                    class_name, confidence_score = process_image(resized_image, True)
+                    # check if confidence score is high enough
+                    if confidence_score < 0.75:
+                        return JsonResponse(
+                            {'status': False, 'message': 'No hands detected in bright mode and dark mode'})
+                else:
+                    cv2.imshow('is not dark image but also no hands', cv2.flip(resized_image, 1))
+                    cv2.waitKey(0)
+                    return JsonResponse(
+                        {'status': False, 'message': 'Image is too bright for dark mode but no hands detected'})
+            else:
+                image_height, image_width, _ = resized_image.shape
+                annotated_image = cv2.flip(resized_image.copy(), 1)
+                for hand_landmarks in results.multi_hand_landmarks:
+                    mp_drawing.draw_landmarks(
+                        annotated_image,
+                        hand_landmarks,
+                        mp_hands.HAND_CONNECTIONS,
+                        mp_drawing_styles.get_default_hand_landmarks_style(),
+                        mp_drawing_styles.get_default_hand_connections_style())
+
+                hand_image = draw_hand_box(annotated_image, hand_landmarks, image_height, image_width)
+                class_name, confidence_score = process_image(hand_image, False)
+S
             # if confidence_score is less than 0.5, return error
             print(f"Confidence score: {confidence_score}")
             if confidence_score < 0.70:

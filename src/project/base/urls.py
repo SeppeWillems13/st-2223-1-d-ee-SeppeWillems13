@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import room_logic, game_logic
+from . import room_logic, game_logic, user_logic
 from . import views
 
 urlpatterns = [
@@ -25,6 +25,7 @@ urlpatterns = [
 
     path('start_game_offline/<str:room_id>', views.start_game_offline, name='start_game_offline'),
     path('start_game_online/<str:room_id>', views.start_game_online, name='start_game_online'),
-    path('play_round/<str:game_id>/', game_logic.play_round, name='play_round'),
+    path('play_round_offline/<str:game_id>/', game_logic.play_round_offline, name='play_round_offline'),
     path('game_detail/<str:game_id>/', views.game_detail, name='game_detail'),
+    path('get_user/<str:member_id>/', user_logic.get_user, name='get_user'),
 ]

@@ -5,8 +5,7 @@ let client;
 let channel
 let remoteStream;
 let peerConnection;
-
-
+let opponentId;
 const servers = {
     iceServers: [{
         urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302']
@@ -29,22 +28,41 @@ let handleUserLeft = (MemberId) => {
     // Update the player count displayed in the HTML template
     let playerCount = document.getElementById('player-count');
     if (playerCount) {
-        playerCount.innerHTML = parseInt(playerCount.innerHTML) - 1;
+        let count = parseInt(playerCount.innerHTML.substring(1, playerCount.innerHTML.indexOf(" ")));
+        count--;
+        playerCount.innerHTML = "(" + count + " Joined)";
     }
 }
+
 
 
 let handleMessageFromPeer = async (message, MemberId) => {
 
     message = JSON.parse(message.text)
-
     if (message.type === 'newPlayer') {
         // Extract the new player's information from the message
-        let newPlayer = message.player;
-        // Update the players list and player count in the HTML template
-        updatePlayersList(newPlayer, MemberId);
+        var user_id = document.getElementById("user_id").value;
+        updatePlayersList(user_id);
+        opponentId = MemberId;
     }
 
+    if (message.type === 'startGame') {
+        console.log("STARTING GAME")
+        console.log("game id:")
+        console.log(message.game_id)
+        let playButton = document.getElementById('start-btn');
+        if (playButton) {
+            playButton.style.display = 'none';
+            }
+        let shuffleButton = document.getElementById('play-btn');
+        if (shuffleButton) {
+            shuffleButton.style.display = 'block';
+        }
+    }
+
+    if (message.type === 'playRound') {
+        console.log("PLAYING ROUND")
+    }
 
     if (message.type === 'offer') {
         createAnswer(MemberId, message.offer)
@@ -61,22 +79,50 @@ let handleMessageFromPeer = async (message, MemberId) => {
     }
 }
 
-let handleUserJoined = async (MemberId) => {
-    createOffer(MemberId);
-    // Send the new player's information to the other client
+let handleGameStarted = async (MemberId) => {
+    let playButton = document.getElementById('start-button');
+    if (playButton) {
+        playButton.style.display = 'none';
+    }
+    let shuffleButton = document.getElementById('play-button');
+    if (shuffleButton) {
+        shuffleButton.style.display = 'block';
+    }
     client.sendMessageToPeer({
         text: JSON.stringify({
-            'type': 'newPlayer',
-            'player': {
-                'name': 'Player ' + MemberId,
-                'id': MemberId
-            }
+            'type': 'startGame'
         })
     }, MemberId);
-    updatePlayersList({
-        name: 'Player ' + MemberId
-    }, MemberId);
 }
+
+
+
+let handleUserJoined = async (MemberId) => {
+    createOffer(MemberId);
+    var user_id = document.getElementById("user_id").value;
+    let user
+    fetch(`/get_user/` + user_id + `/`)
+        .then(response => response.json())
+        .then(data => {
+            console.log("USER SPECIFIC DATA:")
+            console.log(data)
+            user = data;
+            return data;
+        }).then(data => {
+            client.sendMessageToPeer({
+                text: JSON.stringify({
+                    'type': 'newPlayer',
+                    'player': {
+                        'name': user.name,
+                        'id': user_id
+                    }
+                })
+            }, MemberId);
+            updatePlayersList(user_id);
+        });
+}
+
+
 
 let createPeerConnection = async (MemberId) => {
     peerConnection = new RTCPeerConnection(servers)
@@ -156,42 +202,47 @@ let addAnswer = async (answer) => {
 }
 
 
-function updatePlayersList(newPlayer, MemberId) {
-    // Get the players list element from the HTML template
-    let playersList = document.getElementById('participants__list');
-    let newPlayerElement = document.createElement('a');
-    newPlayerElement.classList.add('participant');
-    newPlayerElement.id = `player-${MemberId}`;
-    newPlayerElement.href = `/user/${MemberId}`;
+let updatePlayersList = (MemberId) => {
+    fetch(`/get_user/` + MemberId + `/`)
+        .then(response => response.json())
+        .then(data => {
+            console.log("USER SPECIFIC DATA:");
+            console.log(data);
+            // Get the players list element from the HTML template
+            let playersList = document.getElementById('participants__list');
+            let newPlayerElement = document.createElement('a');
+            newPlayerElement.classList.add('participant');
+            newPlayerElement.id = `player-${MemberId}`;
+            newPlayerElement.href = `/user/${MemberId}`;
 
-    let newPlayerAvatar = document.createElement('div');
-    newPlayerAvatar.classList.add('avatar');
-    newPlayerAvatar.classList.add('avatar--medium');
+            let newPlayerAvatar = document.createElement('div');
+            newPlayerAvatar.classList.add('avatar');
+            newPlayerAvatar.classList.add('avatar--medium');
 
-    let newPlayerAvatarImg = document.createElement('img');
-    newPlayerAvatarImg.src = `https://picsum.photos/200/300?random=${MemberId}`;
+            let newPlayerAvatarImg = document.createElement('img');
+            newPlayerAvatarImg.src = `https://picsum.photos/200/300?random=${MemberId}`;
 
-    newPlayerAvatar.appendChild(newPlayerAvatarImg);
+            newPlayerAvatar.appendChild(newPlayerAvatarImg);
 
-    let newPlayerName = document.createElement('p');
-    newPlayerName.innerHTML = newPlayer.name;
+            let newPlayerName = document.createElement('p');
+            newPlayerName.innerHTML = data.name;
 
-    let newPlayerUsername = document.createElement('span');
-    newPlayerUsername.innerHTML = `@${MemberId}`;
+            let newPlayerUsername = document.createElement('span');
+            newPlayerUsername.innerHTML = `@${data.email}`;
 
-    newPlayerName.appendChild(newPlayerUsername);
+            newPlayerName.appendChild(newPlayerUsername);
 
-    newPlayerElement.appendChild(newPlayerAvatar);
-    newPlayerElement.appendChild(newPlayerName);
+            newPlayerElement.appendChild(newPlayerAvatar);
+            newPlayerElement.appendChild(newPlayerName);
 
-    // Add the new player element to the players list
-    playersList.appendChild(newPlayerElement);
+            // Add the new player element to the players list
+            playersList.appendChild(newPlayerElement);
 
-    let playerCount = document.getElementById('player-count');
-    console.log(playerCount)
-    if (playerCount) {
-        console.log("playerCount:")
-        console.log(playerCount)
-        playerCount.innerHTML = parseInt(playerCount.innerHTML) + 1;
-    }
+            let playerCount = document.getElementById('player-count');
+            if (playerCount) {
+                let count = parseInt(playerCount.innerHTML.substring(1, playerCount.innerHTML.indexOf(" ")));
+                count++;
+                playerCount.innerHTML = "(" + count + " Joined)";
+            }
+        });
 }
