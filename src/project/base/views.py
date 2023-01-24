@@ -19,7 +19,7 @@ from django.urls import reverse
 
 from .forms import UserForm, MyUserCreationForm
 from .hand_recognition import HandClassifier
-from .models import Room, Game, User, Player, Round
+from .models import Room, Game, User, Player, Round, Result
 
 
 # Create your views here.
@@ -87,15 +87,10 @@ def home(request):
 
 
 def userProfile(request, pk):
-    # Retrieve the user instance or return a 404 error if it does not exist
     user = get_object_or_404(User, pk=pk)
-    # get the player instance
     player = Player.objects.get(user=user)
-    # Retrieve the rooms created by the user
     rooms = Room.objects.filter(host=user)
-    # Retrieve the 5 most recent games played by the user
-    room_games = Game.objects.filter(user=user).order_by('-created')[0:5]
-    # Define the template name
+    room_games = Game.objects.filter(Q(user=user) | Q(opponent=user), game_status='Completed').order_by('-updated')[0:5]
     template_name = 'base/profile.html'
     context = {'user': user, 'rooms': rooms,
                'room_games': room_games, 'player': player}
@@ -160,9 +155,23 @@ def deleteGame(request, pk):
         return redirect('user-profile', pk=request.user.id)
 
     if request.user != game.user:
-        return HttpResponse('Your are not allowed here!!')
+        return HttpResponse('You are not allowed to delete this game')
 
     if request.method == 'POST':
+        # update the player win or loss stat and recalcalute win percentage
+        player = Player.objects.get(user=game.user)
+        if game.result == "Win":
+            player.wins -= 1
+        else:
+            player.losses -= 1
+        player.win_percentage = player.wins / (player.wins + player.losses)
+        result = Result.objects.get(game=game)
+        player.played_moves -= result.player_moves
+        player.faced_moves -= result.opponent_moves
+        player.save()
+        player.most_faced_move = player.get_most_faced_move()
+        player.most_played_move = player.get_most_played_move()
+        player.save()
         game.delete()
         return redirect(request.META.get('HTTP_REFERER', 'home'))
     return render(request, 'base/delete.html', {'obj': game})

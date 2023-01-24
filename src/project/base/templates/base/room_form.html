@@ -22,7 +22,7 @@
 
                 <form action="" class="form" method="POST">
                     {% csrf_token %}
-                    <div class="form__group">
+                    <div class="form__group" id="is_online">
                         {{ form.is_online.label }}
                         {{ form.is_online }}
                         {% if form.is_online.errors %}
@@ -37,20 +37,56 @@
                     <div class="form__group">
                         {{ form.host.label }}
                         {{ form.host }}
+
+                        {% if form.is_online.errors %}
+                        <ul class="errorlist">
+                            {% for error in form.is_online.errors %}
+                            <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+
                     </div>
                     <div class="form__group">
                         {{ form.code.label }}
                         {{ form.code }}
+
+                        {% if form.is_online.errors %}
+                        <ul class="errorlist">
+                            {% for error in form.is_online.errors %}
+                            <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+
                     </div>
                     <div class="form__group">
                         {{ form.name.label }}
                         {{ form.name }}
+
+                        {% if form.is_online.errors %}
+                        <ul class="errorlist">
+                            {% for error in form.is_online.errors %}
+                            <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
                     </div>
 
-                    <div class="form__group">
+                    <div class="form__group" id="opponent">
                         {{ form.opponent.label }}
                         {{ form.opponent }}
+
+                        {% if form.is_online.errors %}
+                        <ul class="errorlist">
+                            {% for error in form.is_online.errors %}
+                            <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
                     </div>
+
+
                     <div class="form__action">
                         <a class="btn btn--dark" href="{{request.META.HTTP_REFERER}}">Cancel</a>
                         <button class="btn btn--main" type="submit">Create</button>
@@ -63,8 +99,14 @@
 
 
 <script>
-
-</script>
+is_online.addEventListener("change", function(){
+var value = document.getElementById("id_is_online").value;
+    if (value == "True") {
+        opponent.style.display = "block";
+    } else {
+        opponent.style.display = "none";
+    }
+});
 
 </script>
 {% endblock content %}

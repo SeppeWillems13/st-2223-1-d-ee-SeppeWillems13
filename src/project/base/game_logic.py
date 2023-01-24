@@ -105,7 +105,7 @@ def get_round_prediction_offline(request, game_id):
         with mp_hands.Hands(
                 static_image_mode=True,
                 max_num_hands=1,
-                min_detection_confidence=0.33) as hands:
+                min_detection_confidence=0.1) as hands:
 
             # Convert the BGR image to RGB, flip the image around y-axis for correct
             # handedness output and process it with MediaPipe Hands.

@@ -1,0 +1,150 @@
+<div class="players">
+    <div class="players__header">
+        <h2>Player Detailed Stats</h2>
+    </div>
+    <ul class="players__list">
+        <div id="player_stats_graph">
+            <h4>Win/Loss Ratio: {{player.win_percentage}}%</h4>
+            <canvas id="winLossRatio" data-wins="{{ player.wins }}" data-losses="{{ player.losses }}"></canvas>
+        </div>
+    <hr>
+    <h4>Recent Games:</h4>
+    <div class="timeline">
+        {% for game in room_games %}
+        <div class="timeline-item {{ game.outcome }}">
+            <div class="timeline-icon"></div>
+            <div class="timeline-content">
+                <p>{{ game.result }} against:
+                    {% if game.opponent == None %}
+                    🖥
+                    {% endif %}
+                    {% if user != game.opponent %}
+                    {% if game.opponent.username %}
+                    {{ game.opponent.username }}
+                    {% else %}
+                    {{ game.opponent.email }}
+                    {% endif %}
+                    {% else %}
+                    {% if game.user.username %}
+                    {{ game.user.username }}
+                    {% else %}
+                    {{ game.user.email }}
+                    {% endif %}
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+        <br>
+        <hr>
+        <br>
+<h4>Most played move:<br></h4>
+<p>
+    {% if player.most_played_move == 'Rock' %}
+    🗿
+    {% elif player.most_played_move == 'Paper' %}
+    📄
+    {% elif player.most_played_move == 'Scissors' %}
+    ✂️
+    {% elif player.most_played_move == None %}
+    No games played yet
+    {% endif %}
+</p>
+<h4>Most faced move:<br></h4>
+<p>
+    {% if player.most_faced_move == 'Rock' %}
+    🗿
+    {% elif player.most_faced_move == 'Paper' %}
+    📄
+    {% elif player.most_faced_move == 'Scissors' %}
+    ✂️
+    {% elif player.most_faced_move == None %}
+    No games played yet
+    {% endif %}
+</p>
+    </ul>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.js"></script>
+<script>
+
+    var ctx = document.getElementById('winLossRatio').getContext('2d');
+    var wins = document.getElementById('winLossRatio').getAttribute('data-wins');
+    var losses = document.getElementById('winLossRatio').getAttribute('data-losses');
+    var winLossRatioChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Wins', 'Losses'],
+            datasets: [{
+                data: [wins, losses],
+                backgroundColor: ['#4CAF50', '#F44336']
+            }]
+        }
+    });
+</script>
+
+<style>
+/*==============================
+=>  players
+================================*/
+
+.players__header {
+    margin-bottom: 2rem;
+}
+
+.players__header h2 {
+    text-transform: uppercase;
+    font-weight: 500;
+    color: var(--color-dark-light);
+}
+
+.players__list {
+    list-style: none;
+}
+
+.players__list li a {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 3rem;
+    font-weight: 500;
+    color: var(--color-light-gray);
+    transition: all 0.3s ease-in-out;
+}
+
+.players__list li a.active,
+.players__list li a:hover {
+    color: var(--color-main);
+}
+
+.players__list li a span {
+    padding: 0.5rem 1rem;
+    background-color: var(--color-dark);
+    border-radius: 3px;
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.players-page a:hover {
+    text-decoration: underline;
+}
+
+.players-page .players__list li:not(:last-child) a {
+    margin: 2rem 0;
+    padding-bottom: 1rem;
+    text-decoration: none;
+    border-bottom: 1px solid var(--color-dark-medium);
+}
+
+.players-page .header__search {
+    display: block;
+}
+
+@media screen and (max-width: 500px) {
+    .mobile-menu .header__search {
+        display: block;
+        margin-bottom: 2.4rem;
+    }
+}
+</style>

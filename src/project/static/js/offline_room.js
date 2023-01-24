@@ -61,6 +61,18 @@ let playGame = async () => {
     }
 
     function takeScreenshot() {
+        Swal.fire({
+          title: "Round Started!",
+          text: "📷 A picture will be taken and sent to the backend for processing. Please wait...",
+          icon: "info",
+          showConfirmButton: false,
+          allowOutsideClick: false,
+          onBeforeOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+
         const canvasElement = document.createElement('canvas');
         canvasElement.width = videoElement.videoWidth;
         canvasElement.height = videoElement.videoHeight;
@@ -80,6 +92,7 @@ let playGame = async () => {
                 })
                 .then(response => response.json())
                 .then(data => {
+                    Swal.close();
                     console.log(data);
                     let score = data.score;
                     let player1Score = document.getElementsByClassName("Player-count")[0];
@@ -107,8 +120,7 @@ let playGame = async () => {
                         start_button.style.display = 'block'
                         canvas.style.display = 'none'
 
-                        if (data.winner === "Win"
-                            or data.winner === "Lose") {
+                        if (data.winner === "Win" || data.winner === "Lose") {
                             showGameResults(data);
                         }
                     }

@@ -116,6 +116,12 @@ class Player(models.Model):
     def __str__(self):
         return self.user.username
 
+    def get_most_faced_move(self):
+        return max(self.faced_moves, key=self.faced_moves.get)
+
+    def get_most_played_move(self):
+        return max(self.played_moves, key=self.played_moves.get)
+
     class Meta:
         ordering = ['user__username']
 
