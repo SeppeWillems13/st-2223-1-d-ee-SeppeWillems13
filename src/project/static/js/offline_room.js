@@ -1,11 +1,3 @@
-let game;
-let game_id;
-let localStream;
-let bestOf;
-const csrftoken = getCookie('csrftoken');
-let roomId = getRoomId();
-
-if(!roomId) location.href = '/';
 
 let init = async () => {
     localStream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -135,47 +127,6 @@ let playGame = async () => {
         }
     }
 
-    function showRoundResults(data) {
-        let icon, title;
-        if (data.result === "Win") {
-            icon = 'success';
-            title = 'Round Results';
-        } else if (data.result === "Lose") {
-            icon = 'error';
-            title = 'Round Results';
-        } else if (data.result === "Tie") {
-            icon = 'warning';
-            title = 'Round Results';
-        }
-
-        Swal.fire({
-            title: title,
-            html: `Player chose: ${data.player_move} <br> Computer chose: ${data.computer_move} <br> Result: ${data.result}`,
-            icon: icon,
-            confirmButtonText: 'OK'
-        });
-    };
-
-    function showGameResults(data) {
-        let icon, title, message;
-        if (data.winner === "Win") {
-            icon = 'success';
-            title = 'Game Over';
-            message = 'You Win!';
-        } else if (data.winner === "Lose") {
-            icon = 'error';
-            title = 'Game Over';
-            message = 'You Lose!';
-        }
-
-        Swal.fire({
-            title: title,
-            html: message,
-            icon: icon,
-            confirmButtonText: 'OK'
-        });
-    };
-
     countDown(1);
 
     const camera = new Camera(videoElement, {
@@ -185,7 +136,6 @@ let playGame = async () => {
     });
     camera.start();
 };
-
 
 const start_button = document.getElementById('start-btn')
 start_button.addEventListener('click', startGame)

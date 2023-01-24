@@ -1,14 +1,25 @@
-function getCookie(name) {
+let game;
+let game_id;
+let localStream;
+let bestOf;
+
+let getCookie = (name) => {
     var value = "; " + document.cookie;
     var parts = value.split("; " + name + "=");
     if (parts.length == 2) return parts.pop().split(";").shift();
 }
+
+const csrftoken = getCookie('csrftoken');
+
 
 let getRoomId = () => {
     let currentUrl = window.location.href;
     let parts = currentUrl.split("/");
     return parts[parts.length - 2];
 }
+
+let roomId = getRoomId();
+if(!roomId) location.href = '/';
 
 let constraints = {
     video: {
@@ -34,14 +45,10 @@ let leaveChannel = async () => {
     window.location.href = '/';
 }
 
-
-// Listen for events on the server
 const eventSource = new EventSource("/stream/");
 eventSource.onmessage = function(event) {
-    // Call the updatePlayersList() function when an event is detected
     updatePlayersList();
 }
-
 
 let toggleCamera = async () => {
     let videoTrack = localStream.getTracks().find(track => track.kind === 'video')
@@ -53,6 +60,68 @@ let toggleCamera = async () => {
         videoTrack.enabled = true
         document.getElementById('camera-btn').style.backgroundColor = 'rgb(179, 102, 249, .9)'
     }
+}
+
+
+
+let showRoundResults = async (data) => {
+    let icon, title;
+    if (data.result === "Win") {
+        icon = 'success';
+        title = 'Round Results';
+    } else if (data.result === "Lose") {
+        icon = 'error';
+        title = 'Round Results';
+    } else if (data.result === "Tie") {
+        icon = 'warning';
+        title = 'Round Results';
+    }
+
+    Swal.fire({
+        title: title,
+        html: `Player chose: ${data.player_move} <br> Computer chose: ${data.computer_move} <br> Result: ${data.result}`,
+        icon: icon,
+        confirmButtonText: 'OK'
+    });
+};
+
+let showGameResults = async (data) => {
+    let icon, title, message;
+    if (data.winner === "Win") {
+        icon = 'success';
+        title = 'Game Over';
+        message = 'You Win!';
+    } else if (data.winner === "Lose") {
+        icon = 'error';
+        title = 'Game Over';
+        message = 'You Lose!';
+    }
+
+    Swal.fire({
+        title: title,
+        html: message,
+        icon: icon,
+        confirmButtonText: 'OK'
+    });
+};
+
+let updateScoreboard = async (data) => {
+    console.log(data);
+    let playerMove = data.your_move;
+    let oppsMove = data.opps_move;
+    let result = data.result;
+    let score = data.score;
+
+    // update the round count on the scoreboard
+    let roundCount = document.querySelector('.Round-count');
+    roundCount.innerHTML = `${playerMove} vs ${oppsMove} - ${result}`;
+
+    // update the player and computer scores on the scoreboard
+    let playerCount = document.querySelector('.Player-count');
+    playerCount.innerHTML = score.User;
+
+    let computerCount = document.querySelector('.Computer-count');
+    computerCount.innerHTML = score.User2;
 }
 
 const camera_button = document.getElementById('camera-btn')
