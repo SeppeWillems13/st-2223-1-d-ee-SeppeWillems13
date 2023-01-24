@@ -267,7 +267,8 @@ let addAnswer = async (answer) => {
 
 
 let updatePlayersList = (MemberId) => {
-    fetch(`/get_user/` + MemberId + `/`)
+    let current_user_id = document.getElementById("current_user_id").value;
+    fetch(`/get_user/` + current_user_id + `/`)
         .then(response => response.json())
         .then(data => {
             console.log("USER SPECIFIC DATA:");
