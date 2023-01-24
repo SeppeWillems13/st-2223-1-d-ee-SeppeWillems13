@@ -1,11 +1,20 @@
+import random
 import json
 import random
 
 import cv2
 import mediapipe as mp
+from django.contrib.auth.decorators import login_required
+from django.db.models import Q
+from django.forms import model_to_dict
+from django.http import HttpResponse
 from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from django.shortcuts import redirect
+from django.shortcuts import render
 
 from .models import Player, Round, Result, Game
+from .models import Room, User
 from .player_logic import update_stats
 from .views import resize_screenshot, draw_hand_box, process_image
 
@@ -320,3 +329,98 @@ def play_round(_round, moves, game_id):
         _game.save()
         check_if_game_is_done(_game, moves)
         _round.save()
+
+
+@login_required(login_url='login')
+def deleteGame(request, pk):
+    try:
+        game = Game.objects.get(id=pk)
+    except Game.DoesNotExist:
+        return redirect('user-profile', pk=request.user.id)
+
+    if request.user != game.user:
+        return HttpResponse('You are not allowed to delete this game')
+
+    if request.method == 'POST':
+        # update the player win or loss stat and recalcalute win percentage
+        player = Player.objects.get(user=game.user)
+        if game.result == "Win":
+            player.wins -= 1
+        else:
+            player.losses -= 1
+        player.win_percentage = player.wins / (player.wins + player.losses)
+        result = Result.objects.get(game=game)
+        player.played_moves -= result.player_moves
+        player.faced_moves -= result.opponent_moves
+        player.save()
+        player.most_faced_move = player.get_most_faced_move()
+        player.most_played_move = player.get_most_played_move()
+        player.save()
+        game.delete()
+        return redirect(request.META.get('HTTP_REFERER', 'home'))
+    return render(request, 'base/delete.html', {'obj': game})
+
+@login_required(login_url='login')
+def start_game_offline(request, room_id):
+    if request.method == 'POST':
+        _room = get_object_or_404(Room, code=room_id)
+        # check if a game exists for this _room and set the status to aborted
+        old_game = Game.objects.filter(room=_room)
+        if old_game.exists() and old_game[0].game_status == 'Ongoing':
+            old_game = old_game[0]
+            old_game.game_status = 'Abandoned'
+            old_game.save()
+
+        best_of = int(json.loads(request.body).get('bestOf'))
+        if best_of not in [1, 3, 5, 7, 9, 11, 13]:
+            best_of = 3
+
+        game = Game.objects.create(room=_room, user=request.user, best_of=best_of)
+
+        print(game)
+        game.save()
+        game_dict = model_to_dict(game)
+        return JsonResponse({
+            'success': True,
+            'message': 'Game started',
+            'game': game_dict,
+            'game_id': game.id
+        })
+    else:
+        return JsonResponse({'success': False, 'message': 'Invalid request method'})
+
+
+@login_required(login_url='login')
+def start_game_online(request, room_id):
+    if request.method == 'POST':
+        _room = get_object_or_404(Room, code=room_id)
+        # check if a game exists for this _room and set the status to aborted
+        old_game = Game.objects.filter(room=_room)
+        if old_game.exists() and old_game[0].game_status == 'Ongoing':
+            old_game = old_game[0]
+            old_game.game_status = 'Abandoned'
+            old_game.save()
+
+        host_id = json.loads(request.body).get('host_id')
+        opponent_id = json.loads(request.body).get('opponent_id')
+        users = User.objects.filter(Q(id=host_id) | Q(id=opponent_id))
+        opponent = users[0]
+        if opponent == _room.host:
+            opponent = users[1]
+
+        best_of = int(json.loads(request.body).get('bestOf'))
+        if best_of not in [1, 3, 5, 7, 9, 11, 13]:
+            best_of = 3
+
+        game = Game.objects.create(room=_room, user=request.user, opponent=opponent, best_of=best_of)
+
+        game.save()
+        game_dict = model_to_dict(game)
+        return JsonResponse({
+            'success': True,
+            'message': 'Game started',
+            'game': game_dict,
+            'game_id': game.id
+        })
+    else:
+        return JsonResponse({'success': False, 'message': 'Invalid request method'})

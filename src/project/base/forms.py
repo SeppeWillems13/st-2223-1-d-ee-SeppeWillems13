@@ -29,6 +29,15 @@ class RoomForm(ModelForm):
         }
 
 
+class JoinRoomForm(ModelForm):
+    class Meta:
+        model = Room
+        fields = ['code']
+        widgets = {
+            'code': forms.TextInput(attrs={'required': 'true'}),
+        }
+
+
 class GameForm(forms.ModelForm):
     class Meta:
         model = Game

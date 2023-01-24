@@ -2,8 +2,8 @@ import datetime
 import math
 import os
 import sys
+
 import cv2
-import numpy as np
 
 image_width = 300
 image_height = 300

@@ -76,10 +76,10 @@ let showRoundResults = async (data) => {
         icon = 'warning';
         title = 'Round Results';
     }
-
+    console.log(data)
     Swal.fire({
         title: title,
-        html: `Player chose: ${data.player_move} <br> Computer chose: ${data.computer_move} <br> Result: ${data.result}`,
+        html: `Player chose: ${data.player_move} <br> Computer chose: ${data.opps_move} <br> Result: ${data.result}`,
         icon: icon,
         confirmButtonText: 'OK'
     });
@@ -107,7 +107,7 @@ let showGameResults = async (data) => {
 
 let updateScoreboard = async (data) => {
     console.log(data);
-    let playerMove = data.your_move;
+    let playerMove = data.player_move;
     let oppsMove = data.opps_move;
     let result = data.result;
     let score = data.score;

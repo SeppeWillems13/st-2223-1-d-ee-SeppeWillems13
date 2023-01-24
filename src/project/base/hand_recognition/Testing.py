@@ -1,9 +1,8 @@
 # import the necessary packages
-from keras.models import load_model
-import argparse
-import pickle
-import cv2
 import os
+
+import cv2
+from keras.models import load_model
 
 test_image_path = r"C:\Users\seppe\PycharmProjects\st-2223-1-d-ee-SeppeWillems13\src\project\base\hand_recognition\image_data\image_test\paper"
 

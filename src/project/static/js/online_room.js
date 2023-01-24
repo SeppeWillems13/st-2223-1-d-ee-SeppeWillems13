@@ -78,6 +78,8 @@ let handleMessageFromPeer = async (message, MemberId) => {
     }
 
     if (message.type === 'startGame') {
+        best_of = message.bestOf
+        document.getElementById('best-of').innerHTML = "Scoreboard: Best of: " + best_of;
         let host_id = document.getElementById('host_id').value
         let current_user_id = document.getElementById('current_user_id').value
 
@@ -91,7 +93,6 @@ let handleMessageFromPeer = async (message, MemberId) => {
                 shuffleButton.style.display = 'block';
                 }
         }
-
     Swal.fire({
       title: 'Game Started!',
       text: "Get ready to play!",
@@ -103,10 +104,12 @@ let handleMessageFromPeer = async (message, MemberId) => {
 
     if (message.type === 'startRound') {
         updateScoreboard(message);
+        console.log("hope this is it")
+        console.log(data)
         if (message.result === "Win") {
             Swal.fire({
                 title: 'Round Results',
-                html: `Player chose: ${message.your_move} <br> Opponent chose: ${message.opps_move} <br> Result: ${message.result}`,
+                html: `Player chose: ${message.player_move} <br> Opponent chose: ${message.opps_move} <br> Result: ${message.result}`,
                 icon: 'success',
                 confirmButtonText: 'OK'
             });
@@ -114,7 +117,7 @@ let handleMessageFromPeer = async (message, MemberId) => {
         else if (message.result === "Lose") {
             Swal.fire({
                 title: 'Round Results',
-                html: `Player chose: ${message.opps_move} <br> Opponent chose: ${message.your_move} <br> Result: ${message.result}`,
+                html: `Player chose: ${message.opps_move} <br> Opponent chose: ${message.player_move} <br> Result: ${message.result}`,
                 icon: 'error',
                 confirmButtonText: 'OK'
             });
@@ -122,7 +125,7 @@ let handleMessageFromPeer = async (message, MemberId) => {
         else if (message.result === "Tie") {
             Swal.fire({
                 title: 'Round Results',
-                html: `Player chose: ${message.opps_move} <br> Opponent chose: ${message.your_move} <br> Result: ${message.result}`,
+                html: `Player chose: ${message.opps_move} <br> Opponent chose: ${message.player_move} <br> Result: ${message.result}`,
                 icon: 'warning',
                 confirmButtonText: 'OK'
             });
@@ -155,9 +158,11 @@ let handleGameStarted = async (MemberId) => {
     if (shuffleButton) {
         shuffleButton.style.display = 'block';
     }
+    console.log("BEST OF:")
+    console.log(bestOf)
     client.sendMessageToPeer({
         text: JSON.stringify({
-            'type': 'startGame'
+            'type': 'startGame',
         })
     }, MemberId);
 }
@@ -341,7 +346,6 @@ let startGame = async (players) => {
             bestOf = prompt("Best of how many games? (1, 3, 5, 7, 9, 11, 13)");
         }
         document.getElementById('best-of').innerHTML = "Scoreboard: Best of: " + bestOf;
-        console.log(bestOf)
         let response = await fetch('/start_game_online/' + roomId, {
             method: 'POST',
             headers: {
@@ -360,6 +364,7 @@ let startGame = async (players) => {
                 text: JSON.stringify({
                     'type': 'startGame',
                     'game_id': data.game_id,
+                    'bestOf': bestOf
                 })
             }, opponentId);
 
@@ -444,7 +449,7 @@ let playGame = async () => {
                         client.sendMessageToPeer({
                             text: JSON.stringify({
                                 'type': 'startRound',
-                                'your_move': data.opps_move,
+                                'player_move': data.opps_move,
                                 'opps_move': data.player_move,
                                 'score': data.score,
                                 'result': data.result,

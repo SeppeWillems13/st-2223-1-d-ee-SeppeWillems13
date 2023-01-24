@@ -1,76 +1,17 @@
 import base64
-import json
 import math
 
 import cv2
 import numpy as np
-from django.contrib import messages
-from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
-from django.core import serializers
 from django.db.models import Q
-from django.forms import model_to_dict
-from django.http import HttpResponse
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
-from django.shortcuts import redirect
 from django.shortcuts import render
-from django.urls import reverse
 
-from .forms import UserForm, MyUserCreationForm
 from .hand_recognition import HandClassifier
-from .models import Room, Game, User, Player, Round, Result
+from .models import Room, Game, Player, Round
 
 
 # Create your views here.
-def loginPage(request):
-    page = 'login'
-    if request.user.is_authenticated:
-        return redirect('home')
-
-    if request.method == 'POST':
-        email = request.POST.get('email').lower()
-        password = request.POST.get('password')
-
-        try:
-            user = User.objects.get(email=email)
-        except:
-            messages.error(request, 'User does not exist')
-
-        user = authenticate(request, email=email, password=password)
-
-        if user is not None:
-            login(request, user)
-            return redirect('home')
-        else:
-            messages.error(request, 'Username OR password does not exit')
-
-    context = {'page': page}
-    return render(request, 'base/login_register.html', context)
-
-
-def logoutUser(request):
-    logout(request)
-    return redirect('home')
-
-
-def registerPage(request):
-    if request.method == 'POST':
-        form = MyUserCreationForm(request.POST)
-        if form.is_valid():
-            user = form.save(commit=False)
-            user.username = user.username.lower()
-            user.save()
-            print(user)
-            login(request, user)
-            messages.success(request, 'You have been registered and logged in.')
-            return redirect('home')
-        else:
-            messages.error(request, 'An error occurred during registration')
-    else:
-        form = MyUserCreationForm()
-
-    return render(request, 'base/login_register.html', {'form': form})
 
 
 @login_required(login_url='login')
@@ -86,194 +27,11 @@ def home(request):
     return render(request, 'base/home.html', context)
 
 
-def userProfile(request, pk):
-    user = get_object_or_404(User, pk=pk)
-    player = Player.objects.get(user=user)
-    rooms = Room.objects.filter(host=user)
-    room_games = Game.objects.filter(Q(user=user) | Q(opponent=user), game_status='Completed').order_by('-updated')[0:5]
-    template_name = 'base/profile.html'
-    context = {'user': user, 'rooms': rooms,
-               'room_games': room_games, 'player': player}
-    return render(request, template_name, context)
-
-
-def room(request, pk):
-    try:
-        _room = Room.objects.get(pk=pk)
-    except Room.DoesNotExist:
-        return room_not_found(request, pk)
-
-    # Define the template name
-    template_name = 'base/room.html'
-    if request.method == 'POST':
-        # Validate the form data
-        if not request.POST.get('body'):
-            messages.error(request, 'The message cannot be empty')
-        else:
-            return redirect(reverse('room', args=[pk]))
-    print('request user', request.user)
-    if request.user != _room.host and not _room.is_online:
-        print('not is_online')
-        return room_not_found(request, pk)
-    if request.user != _room.host and not _room.is_online and _room.opponent is not None:
-        print('opponent not none')
-        return room_not_found(request, pk)
-    # if request user is not host and is is_online and opponent is None add user to opponent and save and join room
-    if request.user != _room.host and _room.is_online and _room.opponent is None:
-        print('opponent none you are opponent')
-        _room.opponent = request.user
-        _room.save()
-        return render(request, template_name, {'room': _room})
-    room_games = _room.game_set.select_related('user').all()
-    players = Player.objects.filter(Q(user=_room.host) | Q(user=_room.opponent))
-    print('players', players)
-    players_json = serializers.serialize("json", players)
-    host_id = json.dumps(_room.host.id)
-    current_user_id = json.dumps(request.user.id)
-    if _room.opponent is not None:
-        opponent_id = json.dumps(_room.opponent.id)
-    else:
-        opponent_id = None
-    context = {'room': _room, 'room_games': room_games,
-               'players': players, 'players_json': players_json,
-               'host_id': host_id, 'opponent_id': opponent_id, 'current_user_id': current_user_id}
-
-    print("is online", _room.is_online)
-    return render(request, template_name, context)
-
-
-def room_not_found(request, pk):
-    context = {"pk": pk}
-    return render(request, 'base/room_not_found.html', context)
-
-
-@login_required(login_url='login')
-def deleteGame(request, pk):
-    try:
-        game = Game.objects.get(id=pk)
-    except Game.DoesNotExist:
-        return redirect('user-profile', pk=request.user.id)
-
-    if request.user != game.user:
-        return HttpResponse('You are not allowed to delete this game')
-
-    if request.method == 'POST':
-        # update the player win or loss stat and recalcalute win percentage
-        player = Player.objects.get(user=game.user)
-        if game.result == "Win":
-            player.wins -= 1
-        else:
-            player.losses -= 1
-        player.win_percentage = player.wins / (player.wins + player.losses)
-        result = Result.objects.get(game=game)
-        player.played_moves -= result.player_moves
-        player.faced_moves -= result.opponent_moves
-        player.save()
-        player.most_faced_move = player.get_most_faced_move()
-        player.most_played_move = player.get_most_played_move()
-        player.save()
-        game.delete()
-        return redirect(request.META.get('HTTP_REFERER', 'home'))
-    return render(request, 'base/delete.html', {'obj': game})
-
-
-@login_required(login_url='login')
-def updateUser(request):
-    user = request.user
-    form = UserForm(instance=user)
-
-    if request.method == 'POST':
-        form = UserForm(request.POST, request.FILES, instance=user)
-        if form.is_valid():
-            form.save()
-            return redirect('user-profile', pk=user.id)
-
-    return render(request, 'base/update_user.html', {'form': form})
-
-
-def activityPage(request):
-    room_messages = Game.objects.all()
-    return render(request, 'base/activity.html', {'room_messages': room_messages})
-
-
-def playersPage(request):
-    # q = request.GET.get('q') if request.GET.get('q') is not None else ''
-    # players = Player.objects.filter(user__username__icontains=q)
-
-    players = Player.objects.all()
-    return render(request, 'base/players.html', {'players': players})
-
-
 def playerDetailsPage(request, pk):
     player = Player.objects.get(id=pk)
 
     return render(request, 'base/player_details.html', {'player': player})
 
-
-@login_required(login_url='login')
-def start_game_offline(request, room_id):
-    if request.method == 'POST':
-        _room = get_object_or_404(Room, code=room_id)
-        # check if a game exists for this _room and set the status to aborted
-        old_game = Game.objects.filter(room=_room)
-        if old_game.exists() and old_game[0].game_status == 'Ongoing':
-            old_game = old_game[0]
-            old_game.game_status = 'Abandoned'
-            old_game.save()
-
-        best_of = int(json.loads(request.body).get('bestOf'))
-        if best_of not in [1, 3, 5, 7, 9, 11, 13]:
-            best_of = 3
-
-        game = Game.objects.create(room=_room, user=request.user, best_of=best_of)
-
-        print(game)
-        game.save()
-        game_dict = model_to_dict(game)
-        return JsonResponse({
-            'success': True,
-            'message': 'Game started',
-            'game': game_dict,
-            'game_id': game.id
-        })
-    else:
-        return JsonResponse({'success': False, 'message': 'Invalid request method'})
-
-
-@login_required(login_url='login')
-def start_game_online(request, room_id):
-    if request.method == 'POST':
-        _room = get_object_or_404(Room, code=room_id)
-        # check if a game exists for this _room and set the status to aborted
-        old_game = Game.objects.filter(room=_room)
-        if old_game.exists() and old_game[0].game_status == 'Ongoing':
-            old_game = old_game[0]
-            old_game.game_status = 'Abandoned'
-            old_game.save()
-
-        host_id = json.loads(request.body).get('host_id')
-        opponent_id = json.loads(request.body).get('opponent_id')
-        users = User.objects.filter(Q(id=host_id) | Q(id=opponent_id))
-        opponent = users[0]
-        if opponent == _room.host:
-            opponent = users[1]
-
-        best_of = int(json.loads(request.body).get('bestOf'))
-        if best_of not in [1, 3, 5, 7, 9, 11, 13]:
-            best_of = 3
-
-        game = Game.objects.create(room=_room, user=request.user, opponent=opponent, best_of=best_of)
-
-        game.save()
-        game_dict = model_to_dict(game)
-        return JsonResponse({
-            'success': True,
-            'message': 'Game started',
-            'game': game_dict,
-            'game_id': game.id
-        })
-    else:
-        return JsonResponse({'success': False, 'message': 'Invalid request method'})
 
 
 def process_image(image, dark_mode):
