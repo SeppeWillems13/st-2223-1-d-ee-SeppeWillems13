@@ -131,7 +131,6 @@ let showGameResults = async (data) => {
         title = 'Game Over';
         message = 'You Lose!';
     }
-    console.log("TEST 2")
     Swal.fire({
         title: title,
         html: message,
@@ -179,6 +178,20 @@ let updateScoreboardOffline = async (data) => {
     computerCount.innerHTML = score.Computer;
 }
 
+
+let resetScoreboard = async (data) => {
+
+    // update the round count on the scoreboard
+    let roundCount = document.querySelector('.Round-count');
+    roundCount.innerHTML = ``;
+
+    // update the player and computer scores on the scoreboard
+    let playerCount = document.querySelector('.Player-count');
+    playerCount.innerHTML = 0;
+
+    let computerCount = document.querySelector('.Computer-count');
+    computerCount.innerHTML = 0;
+}
 
 let updateOppScoreboard = async (data) => {
     console.log(data);

@@ -28,6 +28,7 @@ let init = async () => {
         channel.on('startRound', handleRoundStarted);
         channel.on('playRound', handleRoundPlayed);
         channel.on('error', handleError);
+        channel.on('gameOver', handleGameOver);
         client.on('MessageFromPeer', handleMessageFromPeer);
 
         const localStream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -79,6 +80,7 @@ let handleMessageFromPeer = async (message, MemberId) => {
     }
 
     if (message.type === 'startGame') {
+        resetScoreboard();
         best_of = message.bestOf
         document.getElementById('best-of').innerHTML = "Scoreboard: Best of: " + best_of;
         let host_id = document.getElementById('host_id').value
@@ -101,6 +103,13 @@ let handleMessageFromPeer = async (message, MemberId) => {
             confirmButtonText: 'OK'
         })
 
+    }
+
+    if(message.type === 'gameOver'){
+        Swal.close();
+        if (message.winner === "Win" || message.winner === "Lose") {
+            showGameResults(message);
+        }
     }
 
     if (message.type === 'playRound') {
@@ -169,6 +178,13 @@ let handleError = async (MemberId) => {
     }, MemberId);
 }
 
+let handleGameOver = async (MemberId) => {
+    client.sendMessageToPeer({
+        text: JSON.stringify({
+            'type': 'gameOver'
+        })
+    }, MemberId);
+}
 let handleRoundStarted = async (MemberId) => {
     client.sendMessageToPeer({
         text: JSON.stringify({
@@ -454,6 +470,12 @@ let playGame = async () => {
                         }, opponentId);
                     } else {
                         if (data.game_over) {
+                        client.sendMessageToPeer({
+                            text: JSON.stringify({
+                                'type': 'gameOver',
+                                'winner': data.winner,
+                            })
+                        }, opponentId);
                         showRoundResults(data);
                         wait(3000)
                         .then(() => {
