@@ -5,64 +5,64 @@
     <ul class="players__list">
         <div id="player_stats_graph">
             <h4>Win/Loss Ratio: {{ player.win_percentage|floatformat:2 }}%</h4>
-            <canvas id="winLossRatio" data-wins="{{ player.wins }}" data-losses="{{ player.losses }}"></canvas>
+            <canvas data-losses="{{ player.losses }}" data-wins="{{ player.wins }}" id="winLossRatio"></canvas>
         </div>
-    <hr>
-    <h4>Recent Games:</h4>
-    <div class="timeline">
-        {% for game in room_games %}
-        <div class="timeline-item {{ game.outcome }}">
-            <div class="timeline-icon"></div>
-            <div class="timeline-content">
-                <p>{{ game.result }} against:
-                    {% if game.opponent == None %}
-                    Computer
-                    {% endif %}
-                    {% if user != game.opponent %}
-                    {% if game.opponent.username %}
-                    {{ game.opponent.username }}
-                    {% else %}
-                    {{ game.opponent.email }}
-                    {% endif %}
-                    {% else %}
-                    {% if game.user.username %}
-                    {{ game.user.username }}
-                    {% else %}
-                    {{ game.user.email }}
-                    {% endif %}
-                    {% endif %}
-                </p>
+        <hr>
+        <h4>Recent Games:</h4>
+        <div class="timeline">
+            {% for game in room_games %}
+            <div class="timeline-item {{ game.outcome }}">
+                <div class="timeline-icon"></div>
+                <div class="timeline-content">
+                    <p>{{ game.result }} against:
+                        {% if game.opponent == None %}
+                        Computer
+                        {% endif %}
+                        {% if user != game.opponent %}
+                        {% if game.opponent.username %}
+                        {{ game.opponent.username }}
+                        {% else %}
+                        {{ game.opponent.email }}
+                        {% endif %}
+                        {% else %}
+                        {% if game.user.username %}
+                        {{ game.user.username }}
+                        {% else %}
+                        {{ game.user.email }}
+                        {% endif %}
+                        {% endif %}
+                    </p>
+                </div>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
-    </div>
         <br>
         <hr>
         <br>
-<h4>Most played move:<br></h4>
-<p>
-    {% if player.most_played_move == 'Rock' %}
-    🗿
-    {% elif player.most_played_move == 'Paper' %}
-    📄
-    {% elif player.most_played_move == 'Scissors' %}
-    ✂️
-    {% elif player.most_played_move == None %}
-    No games played yet
-    {% endif %}
-</p>
-<h4>Most faced move:<br></h4>
-<p>
-    {% if player.most_faced_move == 'Rock' %}
-    🗿
-    {% elif player.most_faced_move == 'Paper' %}
-    📄
-    {% elif player.most_faced_move == 'Scissors' %}
-    ✂️
-    {% elif player.most_faced_move == None %}
-    No games played yet
-    {% endif %}
-</p>
+        <h4>Most played move:<br></h4>
+        <p>
+            {% if player.most_played_move == 'Rock' %}
+            🗿
+            {% elif player.most_played_move == 'Paper' %}
+            📄
+            {% elif player.most_played_move == 'Scissors' %}
+            ✂️
+            {% elif player.most_played_move == None %}
+            No games played yet
+            {% endif %}
+        </p>
+        <h4>Most faced move:<br></h4>
+        <p>
+            {% if player.most_faced_move == 'Rock' %}
+            🗿
+            {% elif player.most_faced_move == 'Paper' %}
+            📄
+            {% elif player.most_faced_move == 'Scissors' %}
+            ✂️
+            {% elif player.most_faced_move == None %}
+            No games played yet
+            {% endif %}
+        </p>
     </ul>
 </div>
 
@@ -82,6 +82,7 @@
             }]
         }
     });
+
 </script>
 
 <style>
@@ -147,4 +148,5 @@
         margin-bottom: 2.4rem;
     }
 }
+
 </style>

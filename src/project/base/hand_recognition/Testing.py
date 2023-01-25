@@ -9,10 +9,10 @@ test_image_path = r"C:\Users\seppe\PycharmProjects\st-2223-1-d-ee-SeppeWillems13
 model_path = r"C:\Users\seppe\PycharmProjects\st-2223-1-d-ee-SeppeWillems13\src\project\keras\keras_model_third.h5"
 label_binarizer_path = r"C:\Users\seppe\PycharmProjects\st-2223-1-d-ee-SeppeWillems13\src\project\keras\labels.txt"
 
-#for all images in the test folder
+# for all images in the test folder
 for image_path in os.listdir(test_image_path):
     print("image_path", image_path)
-    image = cv2.imread(test_image_path +'\\' + image_path)
+    image = cv2.imread(test_image_path + '\\' + image_path)
     output = image.copy()
     image = cv2.resize(image, (32, 32))
 

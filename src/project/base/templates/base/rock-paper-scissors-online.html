@@ -1,8 +1,8 @@
 {% load static %}
 {% csrf_token %}
-<input type="hidden" id="host_id" value="{{host_id}}">
-<input type="hidden" id="opponent_id" value="{{opponent_id}}">
-<input type="hidden" id="current_user_id" value="{{current_user_id}}">
+<input id="host_id" type="hidden" value="{{host_id}}">
+<input id="opponent_id" type="hidden" value="{{opponent_id}}">
+<input id="current_user_id" type="hidden" value="{{current_user_id}}">
 
 <div id="alert-container"></div>
 <div class="room__conversation">
@@ -174,5 +174,6 @@ canvas{
             width: 20px;
         }
 }
+
 
 </style>

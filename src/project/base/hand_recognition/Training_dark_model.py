@@ -9,7 +9,7 @@ image_width = 300
 image_height = 300
 
 
-def resize_and_show(image,picture_name):
+def resize_and_show(image, picture_name):
     h, w = image.shape[:2]
     if h < w:
         img = cv2.resize(image, (image_width, math.floor(h / (w / image_width))))
@@ -17,7 +17,7 @@ def resize_and_show(image,picture_name):
         img = cv2.resize(image, (math.floor(w / (h / image_height)), image_height))
 
     cv2.imshow("Hand After Resize", img)
-    #check if folder exists
+    # check if folder exists
     if not os.path.exists(f"{folder}/{user_input}"):
         os.makedirs(f"{folder}/{user_input}")
 
@@ -49,7 +49,7 @@ while cap.isOpened():
         count += 1
         picture_name = f"{user_input}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{count}"
         print(f"Saving image {count} of type {user_input}")
-        resize_and_show(image,picture_name)
+        resize_and_show(image, picture_name)
     elif key == 27:
         break
 cap.release()

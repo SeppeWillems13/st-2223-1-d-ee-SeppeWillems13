@@ -5,9 +5,8 @@ let init = async () => {
 };
 
 let startGame = async () => {
-     do {bestOf = prompt("Best of how many games? (1, 3, 5, 7, 9, 11, 13)");}
+do {bestOf = prompt("Best of how many games? (1, 3, 5, 7, 9, 11, 13)");}
      while (bestOf % 2 == 0 || bestOf < 1 || bestOf > 13);
-
     document.getElementById('best-of').innerHTML = "Scoreboard: Best of: " + bestOf;
     let response = await fetch('/start_game_offline/' + roomId, {
         method: 'POST',
@@ -92,7 +91,7 @@ let playGame = async () => {
                     }
                     if (data.game_over) {
                         showRoundResults(data);
-                        wait(2000)
+                        wait(3000)
                         .then(() => {
                             Swal.close();
                             if (data.winner === "Win" || data.winner === "Lose") {
@@ -123,7 +122,7 @@ let playGame = async () => {
         }
     }
 
-    countDown(3);
+    countDown(1);
     const camera = new Camera(videoElement, {
     onFrame: async () => {},
     width: 1280,

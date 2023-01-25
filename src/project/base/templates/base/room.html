@@ -70,9 +70,9 @@
                     </div>
                 </div>
                 {% if room.is_online %}
-                    {% include 'base/rock-paper-scissors-online.html' with players_json=players_json %}
+                {% include 'base/rock-paper-scissors-online.html' with players_json=players_json %}
                 {% else %}
-                    {% include 'base/rock-paper-scissors-offline.html' with players_json=players_json %}
+                {% include 'base/rock-paper-scissors-offline.html' with players_json=players_json %}
                 {% endif %}
 
             </div>
@@ -84,7 +84,7 @@
             <h3 class="participants__top">Players <span id="player-count">({{players.count}} Joined)</span></h3>
             <div class="participants__list scroll" id="participants__list">
                 {% for player in players %}
-                <a class="participant" id="player-{{player.user.id}}" href="{%  url 'user-profile' player.user.id %}">
+                <a class="participant" href="{%  url 'user-profile' player.user.id %}" id="player-{{player.user.id}}">
                     <div class="avatar avatar--medium">
                         <img src="{{player.user.avatar.url}}"/>
                     </div>

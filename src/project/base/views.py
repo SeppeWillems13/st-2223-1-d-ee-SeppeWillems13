@@ -33,7 +33,6 @@ def playerDetailsPage(request, pk):
     return render(request, 'base/player_details.html', {'player': player})
 
 
-
 def process_image(image, dark_mode):
     classifier = HandClassifier.HandClassifier(dark_mode)
     return classifier.classify(image)

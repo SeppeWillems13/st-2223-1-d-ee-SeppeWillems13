@@ -58,9 +58,11 @@ def registerPage(request):
 
     return render(request, 'base/login_register.html', {'form': form})
 
+
 def logoutUser(request):
     logout(request)
     return redirect('home')
+
 
 def get_user(request, member_id):
     user = get_object_or_404(User, pk=member_id)
