@@ -43,10 +43,10 @@ let leaveChannel = async () => {
 leaveChannelOffline = async () => {
 window.location.href = '/';
 }
-const eventSource = new EventSource("/stream/");
-eventSource.onmessage = function(event) {
-    updatePlayersList();
-}
+//const eventSource = new EventSource("/stream/");
+//eventSource.onmessage = function(event) {
+//    updatePlayersList();
+//}
 
 let toggleCamera = async () => {
     let videoTrack = localStream.getTracks().find(track => track.kind === 'video')
@@ -69,7 +69,7 @@ let getBestOf = async () => {
     }
 }
 
-let showRoundResults = async (data) => {
+let showRoundResults = async (data, offline) => {
     let icon, title;
     if (data.result === "Win") {
         icon = 'success';
@@ -81,12 +81,23 @@ let showRoundResults = async (data) => {
         icon = 'warning';
         title = 'Round Results';
     }
+
+    if (offline) {
     Swal.fire({
         title: title,
         html: `Player chose: ${data.player_move} <br> Computer chose: ${data.opps_move} <br> Result: ${data.result}`,
         icon: icon,
         confirmButtonText: 'OK'
     });
+    } else {
+    Swal.fire({
+        title: title,
+        html: `Player chose: ${data.player_move} <br> Opponent chose: ${data.opps_move} <br> Result: ${data.result}`,
+        icon: icon,
+        confirmButtonText: 'OK'
+    });
+    }
+
 };
 
 
@@ -127,6 +138,25 @@ let showGameResults = async (data) => {
         title = 'Game Over';
         message = 'You Win!';
     } else if (data.winner === "Lose") {
+        icon = 'error';
+        title = 'Game Over';
+        message = 'You Lose!';
+    }
+    Swal.fire({
+        title: title,
+        html: message,
+        icon: icon,
+        confirmButtonText: 'OK'
+    });
+};
+
+let showGameResultsOpponent = async (data) => {
+    let icon, title, message;
+    if (data.winner === "Lose") {
+        icon = 'success';
+        title = 'Game Over';
+        message = 'You Win!';
+    } else if (data.winner === "Win") {
         icon = 'error';
         title = 'Game Over';
         message = 'You Lose!';

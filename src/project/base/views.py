@@ -73,5 +73,6 @@ def draw_hand_box(annotated_image, hand_landmarks, image_height, image_width):
 def game_detail(request, game_id):
     game = Game.objects.get(id=game_id)
     rounds = Round.objects.filter(game=game)
-    print(game.score)
+    #get the current user
+
     return render(request, 'base/game_detail.html', {'game': game, 'rounds': rounds, 'is_online': game.room.is_online})

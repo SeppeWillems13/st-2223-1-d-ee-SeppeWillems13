@@ -5,6 +5,7 @@ let init = async () => {
 };
 
 let startGame = async () => {
+    resetScoreboard();
 do {bestOf = prompt("Best of how many games? (1, 3, 5, 7, 9, 11, 13)");}
      while (bestOf % 2 == 0 || bestOf < 1 || bestOf > 13);
     document.getElementById('best-of').innerHTML = "Scoreboard: Best of: " + bestOf;
@@ -29,7 +30,6 @@ do {bestOf = prompt("Best of how many games? (1, 3, 5, 7, 9, 11, 13)");}
         console.log("Error starting game: " + data.message);
     }
 };
-
 
 let playGame = async () => {
     let video = document.getElementById('user-1');
@@ -80,11 +80,11 @@ let playGame = async () => {
                 .then(data => {
                     Swal.close();
                     if (data.success) {
-                        showRoundResults(data);
+                        showRoundResults(data, false);
                         updateScoreboardOffline(data);
                     }
                     if (data.game_over) {
-                        showRoundResults(data);
+                        showRoundResults(data, false);
                         wait(3000)
                         .then(() => {
                             Swal.close();

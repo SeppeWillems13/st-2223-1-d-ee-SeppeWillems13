@@ -50,10 +50,7 @@ def joinRoom(request):
         # check if _room exists
         _room = Room.objects.filter(code=room_code)
         if _room.exists():
-            player = Player.objects.get(user=request.user)
-            _room = _room[0]
-            _room.players.add(player)
-            return redirect('room', code=_room.code)
+            return redirect('room', pk=room_code)
         else:
             messages.error(request, 'Room does not exist')
             return render(request, template_name, context)
@@ -115,23 +112,26 @@ def room(request, pk):
             messages.error(request, 'The message cannot be empty')
         else:
             return redirect(reverse('room', args=[pk]))
-    print('request user', request.user)
     if request.user != _room.host and not _room.is_online:
-        print('not is_online')
         return room_not_found(request, pk)
     if request.user != _room.host and not _room.is_online and _room.opponent is not None:
-        print('opponent not none')
         return room_not_found(request, pk)
     # if request user is not host and is is_online and opponent is None add user to opponent and save and join room
     if request.user != _room.host and _room.is_online and _room.opponent is None:
-        print('opponent none you are opponent')
         _room.opponent = request.user
         _room.save()
         return render(request, template_name, {'room': _room})
     room_games = _room.game_set.select_related('user').all()
-    players = Player.objects.filter(Q(user=_room.host) | Q(user=_room.opponent))
-    print('players', players)
+
+    #if room is online players is host and opponent else only host
+    if _room.is_online:
+        players = Player.objects.filter(Q(user=_room.host) | Q(user=_room.opponent))
+    else:
+        players = Player.objects.filter(user=_room.host)
+
     players_json = serializers.serialize("json", players)
+
+    print("players", players)
     host_id = json.dumps(_room.host.id)
     current_user_id = json.dumps(request.user.id)
     if _room.opponent is not None:

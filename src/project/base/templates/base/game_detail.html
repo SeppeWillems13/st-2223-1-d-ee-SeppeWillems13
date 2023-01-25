@@ -39,10 +39,12 @@
                         {% endif %}
                     </div>
                 </div>
+                { if game.opponent == user }
                 <div class="form__group">
                     <label>Result</label>
                     <input disabled id="result" name="result" type="text" value="{{game.result}}">
                 </div>
+
                 {% if is_online %}
                 <div class="form__group">
                     <label>Opponent</label>

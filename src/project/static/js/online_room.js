@@ -47,25 +47,6 @@ let init = async () => {
 let handleUserLeft = (MemberId) => {
     document.getElementById('user-2').style.display = 'none'
     document.getElementById('user-1').classList.remove('smallFrame')
-
-    // Find the player element in the HTML template
-    let playerToRemove = document.getElementById(`player-${MemberId}`);
-
-    // Remove the player element from the players list
-    if (playerToRemove) {
-        playerToRemove.remove();
-    }
-
-    // Update the player count displayed in the HTML template
-    let playerCount = document.getElementById('player-count');
-    if (playerCount) {
-        let count = parseInt(playerCount.innerHTML.substring(1, playerCount.innerHTML.indexOf(" ")));
-        if (count > 2) {
-            count = 2;
-        }
-        count = Math.max(0, count - 1);
-        playerCount.innerHTML = `(${count})`;
-    }
 }
 
 //THESE MESSAGES ARE FOR THE OPPONENT NOT THE HOST:
@@ -73,11 +54,6 @@ let handleUserLeft = (MemberId) => {
 let handleMessageFromPeer = async (message, MemberId) => {
     opponentId = MemberId
     message = JSON.parse(message.text)
-    if (message.type === 'newPlayer') {
-        // Extract the new player's information from the message
-        var user_id = document.getElementById("current_user_id").value;
-        updatePlayersList(user_id);
-    }
 
     if (message.type === 'startGame') {
         resetScoreboard();
@@ -106,10 +82,15 @@ let handleMessageFromPeer = async (message, MemberId) => {
     }
 
     if(message.type === 'gameOver'){
-        Swal.close();
-        if (message.winner === "Win" || message.winner === "Lose") {
-            showGameResults(message);
-        }
+        wait(3000)
+        .then(() => {
+            console.log("GAME OVER CHECK")
+            console.log(message.winner)
+            Swal.close();
+            if (message.winner === "Win" || message.winner === "Lose") {
+                showGameResultsOpponent(message);
+            }
+        });
     }
 
     if (message.type === 'playRound') {
@@ -195,25 +176,6 @@ let handleRoundStarted = async (MemberId) => {
 
 let handleUserJoined = async (MemberId) => {
     createOffer(MemberId);
-    var user_id = document.getElementById("current_user_id").value;
-    let user
-    fetch(`/get_user/` + user_id + `/`)
-        .then(response => response.json())
-        .then(data => {
-            user = data;
-            return data;
-        }).then(data => {
-            client.sendMessageToPeer({
-                text: JSON.stringify({
-                    'type': 'newPlayer',
-                    'player': {
-                        'name': user.name,
-                        'id': user_id
-                    }
-                })
-            }, MemberId);
-            updatePlayersList(user_id);
-        });
 }
 
 let createPeerConnection = async (MemberId) => {
@@ -293,65 +255,15 @@ let addAnswer = async (answer) => {
 }
 
 function toggleStartButton(show) {
-    //id: start-btn
     document.getElementById('start-btn').style.display = show ? 'block' : 'none';
 }
 
 function togglePlayButton(show) {
-    //id: play-btn
     document.getElementById('play-btn').style.display = show ? 'block' : 'none';
 }
 
-let updatePlayersList = (MemberId) => {
-    let current_user_id = document.getElementById("current_user_id").value;
-    let host_id = document.getElementById("host_id").value;
-    let opponent_id = document.getElementById("opponent_id").value;
-
-    if (current_user_id == host_id || current_user_id == opponent_id) {
-    fetch(`/get_user/` + current_user_id + `/`)
-        .then(response => response.json())
-        .then(data => {
-            let playersList = document.getElementById('participants__list');
-            // Get the players list element from the HTML template
-            let newPlayerElement = document.createElement('a');
-            newPlayerElement.classList.add('participant');
-            newPlayerElement.id = `player-${MemberId}`;
-            newPlayerElement.href = `/profile/${MemberId}`;
-
-            let newPlayerAvatar = document.createElement('div');
-            newPlayerAvatar.classList.add('avatar');
-            newPlayerAvatar.classList.add('avatar--medium');
-
-            let newPlayerAvatarImg = document.createElement('img');
-            newPlayerAvatarImg.src = `https://picsum.photos/200/300?random=${MemberId}`;
-
-            newPlayerAvatar.appendChild(newPlayerAvatarImg);
-
-            let newPlayerName = document.createElement('p');
-            newPlayerName.innerHTML = data.name;
-
-            let newPlayerUsername = document.createElement('span');
-            newPlayerUsername.innerHTML = `@${data.email}`;
-
-            newPlayerName.appendChild(newPlayerUsername);
-
-            newPlayerElement.appendChild(newPlayerAvatar);
-            newPlayerElement.appendChild(newPlayerName);
-
-            // Add the new player element to the players list
-            playersList.appendChild(newPlayerElement);
-
-            let playerCount = document.getElementById('player-count');
-            if (playerCount) {
-                let count = parseInt(playerCount.innerHTML.substring(1, playerCount.innerHTML.indexOf(" ")));
-                count = count + 1 > 2 ? 2 : count + 1 < 0 ? 0 : count + 1;
-                playerCount.innerHTML = "(" + count + " Joined)";
-            }
-        });
-        }
-}
-
 let startGame = async (players) => {
+    resetScoreboard();
     let host_id = document.getElementById('host_id').value
     let opponent_id = document.getElementById('opponent_id').value
     getBestOf();
@@ -470,13 +382,15 @@ let playGame = async () => {
                         }, opponentId);
                     } else {
                         if (data.game_over) {
+                        console.log("Game over");
+                        console.log("sending game over message");
                         client.sendMessageToPeer({
                             text: JSON.stringify({
                                 'type': 'gameOver',
                                 'winner': data.winner,
                             })
                         }, opponentId);
-                        showRoundResults(data);
+                        showRoundResults(data, true);
                         wait(3000)
                         .then(() => {
                             Swal.close();
@@ -505,7 +419,7 @@ let playGame = async () => {
                             })
                         }, opponentId);
                         console.log("YOU PLAYED: " + data.player_move);
-                        showRoundResults(data);
+                        showRoundResults(data, true);
                         updateScoreboard(data);
                     }
                     if (!data.hands_detected) {
