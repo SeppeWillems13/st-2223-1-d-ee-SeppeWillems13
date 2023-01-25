@@ -114,6 +114,12 @@ let showRoundOppResults = async (data) => {
     });
 };
 
+function wait(ms) {
+    return new Promise(resolve => {
+        setTimeout(resolve, ms);
+    });
+}
+
 let showGameResults = async (data) => {
     let icon, title, message;
     if (data.winner === "Win") {
@@ -206,7 +212,7 @@ let popUpRoundStarter = async () => {
         icon: "info",
         showConfirmButton: false,
         allowOutsideClick: false,
-        onBeforeOpen: () => {
+        willOpen: () => {
             Swal.showLoading();
         }
     });

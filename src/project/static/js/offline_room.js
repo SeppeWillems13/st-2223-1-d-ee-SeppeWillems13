@@ -65,12 +65,6 @@ let playGame = async () => {
         canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
         const imgData = canvasElement.toDataURL('image/jpeg', 0.5);
 
-        function wait(ms) {
-            return new Promise(resolve => {
-                setTimeout(resolve, ms);
-            });
-        }
-
         if (!screenshotSent) {
             fetch('/get_round_prediction_offline/' + game_id + '/', {
                     method: 'POST',

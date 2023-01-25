@@ -27,7 +27,7 @@ let init = async () => {
         channel.on('startGame', handleGameStarted);
         channel.on('startRound', handleRoundStarted);
         channel.on('playRound', handleRoundPlayed);
-
+        channel.on('error', handleError);
         client.on('MessageFromPeer', handleMessageFromPeer);
 
         const localStream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -125,6 +125,16 @@ let handleMessageFromPeer = async (message, MemberId) => {
             await peerConnection.addIceCandidate(message.candidate)
         }
     }
+
+        if (message.type === 'error') {
+        Swal.close();
+        Swal.fire({
+            title: "Error",
+            html: "An error occurred. Please try again.",
+            icon: "error",
+            confirmButtonText: 'OK'
+        });
+    }
 }
 
 let handleGameStarted = async (MemberId) => {
@@ -147,6 +157,14 @@ let handleRoundPlayed = async (MemberId) => {
     client.sendMessageToPeer({
         text: JSON.stringify({
             'type': 'playRound'
+        })
+    }, MemberId);
+}
+
+let handleError = async (MemberId) => {
+    client.sendMessageToPeer({
+        text: JSON.stringify({
+            'type': 'error'
         })
     }, MemberId);
 }
@@ -270,6 +288,10 @@ function togglePlayButton(show) {
 
 let updatePlayersList = (MemberId) => {
     let current_user_id = document.getElementById("current_user_id").value;
+    let host_id = document.getElementById("host_id").value;
+    let opponent_id = document.getElementById("opponent_id").value;
+
+    if (current_user_id == host_id || current_user_id == opponent_id) {
     fetch(`/get_user/` + current_user_id + `/`)
         .then(response => response.json())
         .then(data => {
@@ -310,6 +332,7 @@ let updatePlayersList = (MemberId) => {
                 playerCount.innerHTML = "(" + count + " Joined)";
             }
         });
+        }
 }
 
 let startGame = async (players) => {
@@ -416,13 +439,39 @@ let playGame = async () => {
                 .then(response => response.json())
                 .then(data => {
                     Swal.close();
-                    if (data.game_over) {
+                    if (!data.success) {
+                        Swal.fire({
+                            title: "Error",
+                            html: "An error occurred. Please try again.",
+                            icon: "error",
+                            confirmButtonText: 'OK'
+                        });
+                        client.sendMessageToPeer({
+                            text: JSON.stringify({
+                                'type': 'error',
+                                'error': 'An error occurred. Please try again.'
+                            })
+                        }, opponentId);
+                    } else {
+                        if (data.game_over) {
                         showRoundResults(data);
-                        if (data.winner === "Win" || data.winner === "Lose") {
-                            showGameResults(data);
+                        wait(3000)
+                        .then(() => {
+                            Swal.close();
+                            if (data.winner === "Win" || data.winner === "Lose") {
+                                showGameResults(data);
+                            }
+                        });
+
+                        const playButton = document.getElementById('start-btn');
+                        if (playButton) {
+                            playButton.style.display = 'block';
+                        }
+                        const shuffleButton = document.getElementById('play-btn');
+                        if (shuffleButton) {
+                            shuffleButton.style.display = 'none';
                         }
                     }
-                    if (data.success) {
                         client.sendMessageToPeer({
                             text: JSON.stringify({
                                 'type': 'playRound',
