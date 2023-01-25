@@ -1,4 +1,3 @@
-
 let init = async () => {
     localStream = await navigator.mediaDevices.getUserMedia(constraints);
     document.getElementById('user-1').srcObject = localStream;
@@ -6,10 +5,8 @@ let init = async () => {
 };
 
 let startGame = async () => {
-    do {
-        bestOf = prompt("Best of how many games? (1, 3, 5, 7, 9, 11, 13)");
-    }
-    while (bestOf % 2 == 0 || bestOf < 1 || bestOf > 13);
+     do {bestOf = prompt("Best of how many games? (1, 3, 5, 7, 9, 11, 13)");}
+     while (bestOf % 2 == 0 || bestOf < 1 || bestOf > 13);
 
     document.getElementById('best-of').innerHTML = "Scoreboard: Best of: " + bestOf;
     let response = await fetch('/start_game_offline/' + roomId, {
@@ -29,11 +26,11 @@ let startGame = async () => {
         start_button.style.display = 'none';
         game = data.game;
         game_id = data.game_id;
-        console.log(data);
     } else {
         console.log("Error starting game: " + data.message);
     }
 };
+
 
 let playGame = async () => {
     let video = document.getElementById('user-1');
@@ -49,36 +46,32 @@ let playGame = async () => {
     const videoElement = document.getElementsByClassName('video-player')[0];
     let screenshotSent = false;
 
-    function countDown(count) {
-        if (count === 0) {
-            takeScreenshot();
-        } else {
-            console.log(count);
-            setTimeout(() => {
-                countDown(count - 1);
-            }, 1000);
-        }
+    let countDown = async (count) => {
+    if (count === 0) {
+        takeScreenshot();
+    } else {
+        console.log(count);
+        setTimeout(() => {
+            countDown(count - 1);
+        }, 1000);
     }
+}
 
     function takeScreenshot() {
-        Swal.fire({
-          title: "Round Started!",
-          text: "📷 A picture will be taken and sent to the backend for processing. Please wait...",
-          icon: "info",
-          showConfirmButton: false,
-          allowOutsideClick: false,
-          onBeforeOpen: () => {
-            Swal.showLoading();
-          }
-        });
-
-
+        popUpRoundStarter();
         const canvasElement = document.createElement('canvas');
         canvasElement.width = videoElement.videoWidth;
         canvasElement.height = videoElement.videoHeight;
         const canvasCtx = canvasElement.getContext('2d');
         canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
         const imgData = canvasElement.toDataURL('image/jpeg', 0.5);
+
+        function wait(ms) {
+            return new Promise(resolve => {
+                setTimeout(resolve, ms);
+            });
+        }
+
         if (!screenshotSent) {
             fetch('/get_round_prediction_offline/' + game_id + '/', {
                     method: 'POST',
@@ -93,59 +86,49 @@ let playGame = async () => {
                 .then(response => response.json())
                 .then(data => {
                     Swal.close();
-                    console.log(data);
-                    let score = data.score;
-                    let player1Score = document.getElementsByClassName("Player-count")[0];
-                    let roundCount = document.getElementsByClassName("Round-count")[0];
-                    let player2Score = document.getElementsByClassName("Computer-count")[0];
-                    let roundOrResult = document.getElementById("roundOrResult");
-                    if (data.hands_detected) {
-
-                        player1Score.textContent = score.User;
-                        player2Score.textContent = score.Computer;
-                        roundCount.textContent = data.result;
-
+                    if (data.success) {
                         showRoundResults(data);
+                        updateScoreboardOffline(data);
                     }
                     if (data.game_over) {
+                        showRoundResults(data);
+                        wait(2000)
+                        .then(() => {
+                            Swal.close();
+                            if (data.winner === "Win" || data.winner === "Lose") {
+                                showGameResults(data);
+                            }
+                        });
 
-                        player1Score.textContent = score.User;
-                        player2Score.textContent = score.Computer;
-                        roundCount.textContent = data.result;
-
-                        roundOrResult.textContent = "Game Over:";
-                        let winner = data.winner;
-                        roundCount.textContent = "You " + winner + "!";
-                        play_button.style.display = 'none'
-                        start_button.style.display = 'block'
-                        canvas.style.display = 'none'
-
-                        if (data.winner === "Win" || data.winner === "Lose") {
-                            showGameResults(data);
+                        const playButton = document.getElementById('start-btn');
+                        if (playButton) {
+                            playButton.style.display = 'block';
+                        }
+                        const shuffleButton = document.getElementById('play-btn');
+                        if (shuffleButton) {
+                            shuffleButton.style.display = 'none';
                         }
                     }
+
+
                     if (!data.hands_detected) {
-                        alert("No hands detected. Please try again. Try in a brighter room.")
-                        screenshotSent = false;
-                    } else if (data.message === "Invalid move") {
-                        alert("Invalid move. Please try again.")
-                        screenshotSent = false;
-                    } else {
-                        screenshotSent = true;
+                        Swal.fire({
+                            title: "No hands",
+                            html: "No hands detected in the image. Please try again.",
+                            icon: "error",
+                            confirmButtonText: 'OK'
+                        });
                     }
-                }).catch(error => {
-                    console.error('There has been a problem with your fetch operation:', error);
                 });
         }
     }
 
-    countDown(1);
-
+    countDown(3);
     const camera = new Camera(videoElement, {
-        onFrame: async () => {},
-        width: 1280,
-        height: 720
-    });
+    onFrame: async () => {},
+    width: 1280,
+    height: 720
+});
     camera.start();
 };
 
@@ -154,4 +137,8 @@ start_button.addEventListener('click', startGame)
 
 const play_button = document.getElementById('play-btn')
 play_button.addEventListener('click', playGame)
+
+window.addEventListener('beforeunload', leaveChannelOffline)
+const leave_button = document.getElementById('leave-btn')
+leave_button.addEventListener('click', leaveChannelOffline)
 init();

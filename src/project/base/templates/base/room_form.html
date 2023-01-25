@@ -99,14 +99,23 @@
 
 
 <script>
-is_online.addEventListener("change", function(){
-var value = document.getElementById("id_is_online").value;
+window.onload = function() {
+  var opponent = document.getElementById("opponent");
+  var is_online = document.getElementById("id_is_online");
+  var value = is_online.value;
+  if (value == "True") {
+    opponent.style.display = "block";
+  } else {
+    opponent.style.display = "none";
+  }
+  is_online.addEventListener("change", function() {
+    var value = document.getElementById("id_is_online").value;
     if (value == "True") {
         opponent.style.display = "block";
     } else {
         opponent.style.display = "none";
     }
-});
-
+  });
+};
 </script>
 {% endblock content %}

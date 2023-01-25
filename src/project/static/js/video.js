@@ -1,7 +1,4 @@
-let game;
-let game_id;
-let localStream;
-let bestOf;
+let video, canvas, playerctx, screenshotSent, bestOf, localStream, game_id, game, videoElement, canvasElement, canvasCtx, imgData
 
 let getCookie = (name) => {
     var value = "; " + document.cookie;
@@ -19,7 +16,7 @@ let getRoomId = () => {
 }
 
 let roomId = getRoomId();
-if(!roomId) location.href = '/';
+if (!roomId) location.href = '/';
 
 let constraints = {
     video: {
@@ -38,13 +35,14 @@ let constraints = {
 }
 
 let leaveChannel = async () => {
-    if (channel) {
     await channel.leave();
     await client.logout();
-    }
     window.location.href = '/';
 }
 
+leaveChannelOffline = async () => {
+window.location.href = '/';
+}
 const eventSource = new EventSource("/stream/");
 eventSource.onmessage = function(event) {
     updatePlayersList();
@@ -62,7 +60,14 @@ let toggleCamera = async () => {
     }
 }
 
-
+let getBestOf = async () => {
+    if (host_id && opponent_id) {
+        do {
+            bestOf = prompt("Best of how many games? (1, 3, 5, 7, 9, 11, 13)");
+        }
+        while (bestOf % 2 == 0 || bestOf < 1 || bestOf > 13);
+    }
+}
 
 let showRoundResults = async (data) => {
     let icon, title;
@@ -76,10 +81,34 @@ let showRoundResults = async (data) => {
         icon = 'warning';
         title = 'Round Results';
     }
-    console.log(data)
     Swal.fire({
         title: title,
         html: `Player chose: ${data.player_move} <br> Computer chose: ${data.opps_move} <br> Result: ${data.result}`,
+        icon: icon,
+        confirmButtonText: 'OK'
+    });
+};
+
+
+let showRoundOppResults = async (data) => {
+    let icon, title, result;
+    if (data.result === "Lose") {
+        result = "Win"
+        icon = 'success';
+        title = 'Round Results';
+    } else if (data.result === "Win") {
+        result = "Lose"
+        icon = 'error';
+        title = 'Round Results';
+    } else if (data.result === "Tie") {
+        result = "Tie"
+        icon = 'warning';
+        title = 'Round Results';
+    }
+    console.log("TEST 1")
+    Swal.fire({
+        title: title,
+        html: `Player chose: ${data.player_move} <br> Computer chose: ${data.opps_move} <br> Result: ${result}`,
         icon: icon,
         confirmButtonText: 'OK'
     });
@@ -96,7 +125,7 @@ let showGameResults = async (data) => {
         title = 'Game Over';
         message = 'You Lose!';
     }
-
+    console.log("TEST 2")
     Swal.fire({
         title: title,
         html: message,
@@ -124,9 +153,64 @@ let updateScoreboard = async (data) => {
     computerCount.innerHTML = score.User2;
 }
 
+
+let updateScoreboardOffline = async (data) => {
+    console.log(data);
+    let playerMove = data.player_move;
+    let oppsMove = data.opps_move;
+    let result = data.result;
+    let score = data.score;
+
+    // update the round count on the scoreboard
+    let roundCount = document.querySelector('.Round-count');
+    roundCount.innerHTML = `${playerMove} vs ${oppsMove} - ${result}`;
+
+    // update the player and computer scores on the scoreboard
+    let playerCount = document.querySelector('.Player-count');
+    playerCount.innerHTML = score.User;
+
+    let computerCount = document.querySelector('.Computer-count');
+    computerCount.innerHTML = score.Computer;
+}
+
+
+let updateOppScoreboard = async (data) => {
+    console.log(data);
+    let playerMove = data.opps_move;
+    let oppsMove = data.player_move;
+    let result = data.result;
+
+    if (result == "Win") {
+        result = "Lose";
+    }else if (result == "Lose") {
+        result = "Win";
+    }
+    let score = data.score;
+    console.log("CHECK SCORE: ", score)
+    // update the round count on the scoreboard
+    let roundCount = document.querySelector('.Round-count');
+    roundCount.innerHTML = `${oppsMove} vs ${playerMove} - ${result}`;
+
+    // update the player and computer scores on the scoreboard
+    let playerCount = document.querySelector('.Player-count');
+    playerCount.innerHTML = score.User2;
+
+    let computerCount = document.querySelector('.Computer-count');
+    computerCount.innerHTML = score.User;
+}
+
+let popUpRoundStarter = async () => {
+    Swal.fire({
+        title: "Round Started!",
+        text: "📷 A picture will be taken and sent to the backend for processing. Please wait...",
+        icon: "info",
+        showConfirmButton: false,
+        allowOutsideClick: false,
+        onBeforeOpen: () => {
+            Swal.showLoading();
+        }
+    });
+}
+
 const camera_button = document.getElementById('camera-btn')
 camera_button.addEventListener('click', toggleCamera)
-
-window.addEventListener('beforeunload', leaveChannel)
-const leave_button = document.getElementById('leave-btn')
-leave_button.addEventListener('click', leaveChannel)

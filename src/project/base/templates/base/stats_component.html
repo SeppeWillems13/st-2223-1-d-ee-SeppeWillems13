@@ -4,7 +4,7 @@
     </div>
     <ul class="players__list">
         <div id="player_stats_graph">
-            <h4>Win/Loss Ratio: {{player.win_percentage}}%</h4>
+            <h4>Win/Loss Ratio: {{ player.win_percentage|floatformat:2 }}%</h4>
             <canvas id="winLossRatio" data-wins="{{ player.wins }}" data-losses="{{ player.losses }}"></canvas>
         </div>
     <hr>
@@ -16,7 +16,7 @@
             <div class="timeline-content">
                 <p>{{ game.result }} against:
                     {% if game.opponent == None %}
-                    🖥
+                    Computer
                     {% endif %}
                     {% if user != game.opponent %}
                     {% if game.opponent.username %}

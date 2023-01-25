@@ -53,7 +53,7 @@ def joinRoom(request):
             player = Player.objects.get(user=request.user)
             _room = _room[0]
             _room.players.add(player)
-            return redirect('room', pk=_room.code)
+            return redirect('room', code=_room.code)
         else:
             messages.error(request, 'Room does not exist')
             return render(request, template_name, context)
@@ -66,12 +66,12 @@ def joinRoom(request):
 def updateRoom(request, pk):
     # Get the room object
     try:
-        _room = get_object_or_404(Room, id=pk)
+        _room = get_object_or_404(Room, code=pk)
     except Http404:
         # Handle the case where the room does not exist
         return render(request, 'base/room_not_found.html', {'pk': pk})
     # Create a form instance with POST data, if available
-    form = RoomForm(request.POST or None, instance=_room)
+    form = RoomForm(request.POST or None, host_id=request.user.id, instance=_room)
     # Check if the form has been submitted
     if request.method == 'POST':
         # Validate the form data

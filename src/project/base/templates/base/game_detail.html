@@ -26,16 +26,29 @@
                             <span class="score__label">Player:</span>
                             <span class="score__value">{{game.score.User}}</span>
                         </div>
+                        {% if is_online %}
+                        <div class="score__item">
+                            <span class="score__label">{{game.opponent}}:</span>
+                            <span class="score__value">{{game.score.User2}}</span>
+                        </div>
+                        {% else %}
                         <div class="score__item">
                             <span class="score__label">Computer:</span>
                             <span class="score__value">{{game.score.Computer}}</span>
                         </div>
+                        {% endif %}
                     </div>
                 </div>
                 <div class="form__group">
                     <label>Result</label>
                     <input disabled id="result" name="result" type="text" value="{{game.result}}">
                 </div>
+                {% if is_online %}
+                <div class="form__group">
+                    <label>Opponent</label>
+                    <input disabled id="opponent" name="opponent" type="text" value="{{game.opponent.username}}">
+                </div>
+                {% endif %}
                 <div class="form__group">
                     <label>Best of</label>
                     <input disabled id="best_of" name="best_of" type="text" value="{{game.best_of}}">
@@ -76,7 +89,6 @@
         </div>
     </div>
 </main>
-
 <style>
 
 .score{
