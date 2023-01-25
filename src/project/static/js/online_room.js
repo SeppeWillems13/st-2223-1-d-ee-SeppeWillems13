@@ -1,4 +1,5 @@
 let APP_ID = "171f25c1a1c644389463a00bbcf1fb8e"
+//let APP_ID ="ea0ae2d7cf8045638e193dcac88a7a18"
 let token = null;
 let uid = String(Math.floor(Math.random() * 10000))
 let client, channel, remoteStream, peerConnection, opponentId;
