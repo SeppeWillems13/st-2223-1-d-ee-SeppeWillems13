@@ -1,8 +1,8 @@
 {% load static %}
 {% csrf_token %}
-<input type="hidden" id="host_id" value="{{host_id}}">
-<input type="hidden" id="opponent_id" value="{{opponent_id}}">
-<input type="hidden" id="current_user_id" value="{{current_user_id}}">
+<input id="host_id" type="hidden" value="{{host_id}}">
+<input id="opponent_id" type="hidden" value="{{opponent_id}}">
+<input id="current_user_id" type="hidden" value="{{current_user_id}}">
 
 <div id="alert-container"></div>
 <div class="room__conversation">
@@ -55,223 +55,9 @@
 <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
 <script crossorigin="anonymous" src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
-<script src="{% static 'js/video.js' %}"></script>
 <script src="{% static 'js/agora-rtm-sdk-1.5.1.js' %}"></script>
-<script src="{% static 'js/agora_logic.js'%}"></script>
-
-<script>
-let game;
-let game_id;
-const csrftoken = getCookie('csrftoken');
-
-let roomId = getRoomId();
-if (!roomId) {
-    window.location.href = '/'
-}
-
-let localStream;
-let bestOf;
-
-let init = async () => {
-    client = AgoraRTM.createInstance(APP_ID, {
-        enableLogUpload: false
-    });
-    await client.login({
-        uid,
-        token
-    })
-
-    channel = client.createChannel(roomId)
-    await channel.join()
-
-    channel.on('MemberJoined', handleUserJoined)
-    channel.on('MemberLeft', handleUserLeft)
-    channel.on('startGame', handleGameStarted)
-    channel.on('startRound', handleRoundStarted)
-
-
-    client.on('MessageFromPeer', handleMessageFromPeer)
-
-    localStream = await navigator.mediaDevices.getUserMedia(constraints)
-    document.getElementById('user-1').srcObject = localStream
-    //check if the current user is the host
-    let host_id = document.getElementById('host_id').value
-    let current_user_id = document.getElementById('current_user_id').value
-
-    console.log(host_id)
-    console.log("EQUALS")
-    console.log(current_user_id)
-    if(host_id == current_user_id) {
-        document.getElementById('start-btn').style.display = 'block';
-    } else {
-        document.getElementById('start-btn').style.display = 'none';
-    }
-    play_button.style.display = 'none';
-}
-
-
-let startGame = async (players) => {
-    let host_id = document.getElementById('host_id').value
-    let opponent_id = document.getElementById('opponent_id').value
-    console.log(host_id)
-    console.log(opponent_id)
-    if (host_id && opponent_id) {
-        // check if the current user is a player in the room
-        bestOf = prompt("Best of how many games? (1, 3, 5, 7, 9, 11, 13)");
-        // only prompts once it needs to keep until a valid number is entered
-        while (bestOf % 2 == 0 || bestOf < 1 || bestOf > 13) {
-            bestOf = prompt("Best of how many games? (1, 3, 5, 7, 9, 11, 13)");
-        }
-        document.getElementById('best-of').innerHTML = "Scoreboard: Best of: " + bestOf;
-        console.log(bestOf)
-        let response = await fetch('/start_game_online/' + roomId, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrftoken
-            },
-            body: JSON.stringify({
-                bestOf: bestOf,
-                host_id: host_id,
-                opponent_id: opponent_id
-            })
-        });
-        let data = await response.json();
-        if (data.success) {
-            client.sendMessageToPeer({
-                text: JSON.stringify({
-                    'type': 'startGame',
-                    'game_id': data.game_id,
-                })
-            }, opponentId);
-
-            console.log("Game started successfully");
-            play_button.style.display = 'block'
-            start_button.style.display = 'none'
-            game = data.game;
-            game_id = data.game_id;
-            console.log(data);
-        } else {
-            console.log("Error starting game: " + data.message);
-        }}else{
-            alert("You are not a player in this room")
-            }
-    }
-
-
-let playGame = async () => {
-    let video = document.getElementById('user-1');
-    let canvas = document.getElementById('canvas-user-1');
-
-    let video_user2 = document.getElementById('user-2');
-    let canvas_user2 = document.getElementById('canvas-user-2');
-    canvas.style.display = 'block'
-    canvas.width = video.clientWidth;
-    canvas.height = video.clientHeight;
-    canvas.style.position = 'absolute';
-    canvas.style.top = video.offsetTop + 'px';
-    canvas.style.left = video.offsetLeft + 'px';
-
-    let playerctx = canvas.getContext('2d');
-    const videoElement = document.getElementsByClassName('video-player')[0];
-    const videoElement_user2 = document.getElementsByClassName('video-player')[1];
-    //set text on the playerctx canvas
-    playerctx.font = '48px serif';
-    playerctx.fillStyle = 'white';
-    //delete text from the canvas
-    playerctx.clearRect(0, 0, canvas.width, canvas.height);
-    let screenshotSent = false;
-
-    function countDown(count) {
-        if (count === 0) {
-            takeScreenshot();
-        } else {
-            console.log(count);
-            setTimeout(() => {
-                countDown(count - 1);
-            }, 1000);
-        }
-    }
-
-    function takeScreenshot() {
-        const canvasElement_user2 = document.createElement('canvas');
-        canvasElement_user2.width = videoElement_user2.videoWidth;
-        canvasElement_user2.height = videoElement_user2.videoHeight;
-        const canvasCtx_user2 = canvasElement_user2.getContext('2d');
-        canvasCtx_user2.drawImage(videoElement_user2, 0, 0, canvasElement_user2.width, canvasElement_user2.height);
-        const imgData_user2 = canvasElement_user2.toDataURL('image/jpeg', 0.5);
-
-        const canvasElement = document.createElement('canvas');
-        canvasElement.width = videoElement.videoWidth;
-        canvasElement.height = videoElement.videoHeight;
-        const canvasCtx = canvasElement.getContext('2d');
-        canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
-        const imgData = canvasElement.toDataURL('image/jpeg', 0.5);
-
-        console.log(imgData_user2);
-        console.log(imgData);
-        if (!screenshotSent) {
-            fetch('/get_round_prediction_online/' + game_id + '/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrftoken
-                    },
-                    body: JSON.stringify({
-                        screenshot1: imgData,
-                        screenshot2: imgData_user2
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-            if (data.success) {
-            client.sendMessageToPeer({
-                text: JSON.stringify({
-                    'type': 'startRound',
-                    'your_move': data.opps_move,
-                    'opps_move': data.player_move,
-                    'score': data.score,
-                    'result': data.result,
-                    'game_over': data.game_over,
-                })
-            }, opponentId);}
-                    console.log(data);
-                    let score = data.score;
-                    let player1Score = document.getElementsByClassName("Player-count")[0];
-                    let roundCount = document.getElementsByClassName("Round-count")[0];
-                    let player2Score = document.getElementsByClassName("Computer-count")[0];
-                    let roundOrResult = document.getElementById("roundOrResult");
-                    if (data.hands_detected) {
-                        let move = data.player_move;
-                    }
-                    if (data.game_over) {
-                        // rest of the code here
-                    }
-                    if (!data.hands_detected) {
-                        // rest of the code here
-                    }
-                });
-        }
-    }
-
-    countDown(3);
-
-    const camera = new Camera(videoElement, {
-        onFrame: async () => {},
-        width: 1280,
-        height: 720
-    });
-    camera.start();
-};
-
-const start_button = document.getElementById('start-btn')
-start_button.addEventListener('click', startGame)
-
-const play_button = document.getElementById('play-btn')
-play_button.addEventListener('click', playGame)
-
-init();
-</script>
+<script src="{% static 'js/video.js' %}"></script>
+<script src="{% static 'js/online_room.js' %}"></script>
 <style>
  *{
     margin: 0;
@@ -388,5 +174,6 @@ canvas{
             width: 20px;
         }
 }
+
 
 </style>

@@ -1,4 +1,5 @@
-from .models import Player, WIN, LOSE
+from .models import Player
+from .models import WIN, LOSE
 
 
 def add_player_to_room(_room, request):

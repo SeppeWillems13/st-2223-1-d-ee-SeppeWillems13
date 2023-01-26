@@ -12,7 +12,8 @@
         </div>
     </div>
     <div class="roomListRoom__content">
-        <a href="{% url 'room' room.code %}">{{room.name}}<small> ({{room.is_online|yesno:"Online,Offline"}})</small></a>
+        <a href="{% url 'room' room.code %}">{{room.name}}<small>
+            ({{room.is_online|yesno:"Online,Offline"}})</small></a>
     </div>
     <div class="roomListRoom__meta">
         <a class="roomListRoom__joined" href="{% url 'room' room.code %}">
