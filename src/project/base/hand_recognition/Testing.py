@@ -1,91 +1,52 @@
-import math
+# import the necessary packages
+import os
 
 import cv2
-import mediapipe as mp
-import numpy as np
 from keras.models import load_model
 
-mp_drawing = mp.solutions.drawing_utils
-mp_drawing_styles = mp.solutions.drawing_styles
-mp_hands = mp.solutions.hands
+test_image_path = r"C:\Users\seppe\PycharmProjects\st-2223-1-d-ee-SeppeWillems13\src\project\base\hand_recognition\image_data\image_test\paper"
 
-model_path = r'C:\Users\seppe\PycharmProjects\st-2223-1-d-ee-SeppeWillems13\src\project\keras\keras_model_second.h5'
-labels_path = r'C:\Users\seppe\PycharmProjects\st-2223-1-d-ee-SeppeWillems13\src\project\keras\labels.txt'
-# Load the model and labels
-model = load_model(model_path, compile=False)
-with open(labels_path, 'r') as f:
-    labels = f.read().splitlines()
+model_path = r"C:\Users\seppe\PycharmProjects\st-2223-1-d-ee-SeppeWillems13\src\project\keras\keras_model_third.h5"
+label_binarizer_path = r"C:\Users\seppe\PycharmProjects\st-2223-1-d-ee-SeppeWillems13\src\project\keras\labels.txt"
 
-image_width = 300
-image_height = 300
+# for all images in the test folder
+for image_path in os.listdir(test_image_path):
+    print("image_path", image_path)
+    image = cv2.imread(test_image_path + '\\' + image_path)
+    output = image.copy()
+    image = cv2.resize(image, (32, 32))
 
+    # scale the pixel values to [0, 1]
+    image = image.astype("float") / 255.0
+    image = image.flatten()
+    print("image after flattening", len(image))
+    image = image.reshape((1, image.shape[0]))
+    print("image--reshape", image.shape)
 
-def resize_and_show(image):
-    h, w = image.shape[:2]
-    if h < w:
-        img = cv2.resize(image, (image_width, math.floor(h / (w / image_width))))
-    else:
-        img = cv2.resize(image, (math.floor(w / (h / image_height)), image_height))
-    cv2.imshow("Hand In Resize", img)
+    # load the model and label binarizer
+    print("[INFO] loading network and label binarizer...")
+    model = load_model(model_path)
+    labels_path = r"C:\Users\seppe\PycharmProjects\st-2223-1-d-ee-SeppeWillems13\src\project\keras\labels.txt"
 
+    with open(labels_path, 'r') as f:
+        labels = f.read().splitlines()
 
-def crop_and_predict(image: np.ndarray, hand_landmarks: mp_hands.HandLandmark) -> None:
-    min_x, min_y, max_x, max_y = 1.0, 1.0, 0.0, 0.0
-    for landmark in hand_landmarks.landmark:
-        min_x, min_y = min(landmark.x, min_x), min(landmark.y, min_y)
-        max_x, max_y = max(landmark.x, max_x), max(landmark.y, max_y)
-    offset_x, offset_y = 0.05, 0.05
-    frame_height, frame_width = image.shape[:2]
-    min_x, min_y = int(min_x * frame_width - offset_x * frame_width), int(
-        min_y * frame_height - offset_y * frame_height)
-    max_x, max_y = int(max_x * frame_width + offset_x * frame_width), int(
-        max_y * frame_height + offset_y * frame_height)
-    hand_image = image[min_y:max_y, min_x:max_x]
-    resize_and_show(cv2.flip(hand_image, 1))
+    # # make a prediction on the image
+    print(image.shape)
+    preds = model.predict(image)
 
-    return hand_image
+    # find the class label index with the largest corresponding
+    # probability
+    print("preds.argmax(axis=1)", preds.argmax(axis=1))
+    i = preds.argmax(axis=1)[0]
+    print(i)
+    label = labels[i]
 
+    # draw the class label + probability on the output image
+    text = "{}: {:.2f}%".format(label, preds[0][i] * 100)
+    cv2.putText(output, text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+                (0, 0, 255), 2)
 
-cap = cv2.VideoCapture(0)
-with mp_hands.Hands(
-        model_complexity=0,
-        min_detection_confidence=0.5,
-        min_tracking_confidence=0.5) as hands:
-    current_hand_landmarks = None
-    while True:
-        success, image = cap.read()
-        if not success:
-            print("Ignoring empty camera frame.")
-            continue
-
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        results = hands.process(image)
-
-        if results.multi_hand_landmarks:
-            for hand_landmarks in results.multi_hand_landmarks:
-                current_hand_landmarks = hand_landmarks
-                mp_drawing.draw_landmarks(
-                    image,
-                    hand_landmarks,
-                    mp_hands.HAND_CONNECTIONS,
-                    mp_drawing_styles.get_default_hand_landmarks_style(),
-                    mp_drawing_styles.get_default_hand_connections_style())
-                image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-                cv2.imshow('MediaPipe Hands', cv2.flip(image, 1))
-                if current_hand_landmarks is not None:
-                    hand_image = cv2.resize(image, (224, 224), interpolation=cv2.INTER_AREA)
-                    # Show the image in a window
-                    cv2.imshow('Webcam Image', hand_image)
-                    # Make the image a numpy array and reshape it to the models input shape.
-                    hand_image = np.asarray(hand_image, dtype=np.float32)
-                    hand_image = hand_image.reshape(1, 224, 224, 3)
-                    # Normalize the image array
-                    hand_image = (hand_image / 127.5) - 1
-                    probabilities = model.predict(hand_image)
-                    print(labels[np.argmax(probabilities)])
-                    keyboard_input = cv2.waitKey(1)
-                    if keyboard_input == 27:
-                        break
-            cv2.waitKey(1)
-    cap.release()
-    cv2.destroyAllWindows()
+    # show the output image
+    cv2.imshow("Image", output)
+    cv2.waitKey(0)

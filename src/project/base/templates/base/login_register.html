@@ -12,17 +12,18 @@
                 </div>
             </div>
             <div class="layout__body">
-                <h2 class="auth__tagline">Find your study partner</h2>
+                <h2 class="auth__tagline">Rock Paper Scissors</h2>
 
                 <form action="" class="form" method="POST">
                     {% csrf_token %}
                     <div class="form__group form__group">
                         <label>Email</label>
-                        <input id="username" name="email" type="email" placeholder=""/>
+                        <input id="username" name="email" placeholder="" type="email"/>
                     </div>
                     <div class='form__group'>
                         <label>Password</label>
-                        <input id="password" name="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" type="password"/>
+                        <input id="password" name="password"
+                               placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" type="password"/>
                     </div>
 
                     <button class="btn btn--main" type="submit">

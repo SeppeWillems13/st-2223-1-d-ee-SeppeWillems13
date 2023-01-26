@@ -1,3 +1,4 @@
+import json
 import uuid
 
 from django.contrib.auth.models import AbstractUser
@@ -43,7 +44,7 @@ class User(AbstractUser):
     avatar = models.ImageField(null=True, default="avatar.svg")
 
     # TODO COMMENT OUT WHEN NEW MIGRATIONS CREATING SUPERUSER
-    USERNAME_FIELD = 'email'
+    # USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
 
 
@@ -105,8 +106,9 @@ class Player(models.Model):
     wins = models.IntegerField(default=0, null=True, blank=True)
     losses = models.IntegerField(default=0, null=True, blank=True)
     games = models.ManyToManyField(Game, related_name='players', null=True, blank=True)
-    played_moves = JSONField(default=dict, null=True, blank=True)
-    faced_moves = JSONField(default=dict, null=True, blank=True)
+    default_moves = {"Rock": 0, "Paper": 0, "Scissors": 0}
+    played_moves = JSONField(default=default_moves, null=True, blank=True)
+    faced_moves = JSONField(default=default_moves, null=True, blank=True)
     most_played_move = models.CharField(max_length=64, choices=GAME_MOVE_CHOICES, default='', null=True, blank=True)
     most_faced_move = models.CharField(max_length=64, choices=GAME_MOVE_CHOICES, default='', null=True, blank=True)
     win_streak = models.IntegerField(default=0, null=True, blank=True)
@@ -115,6 +117,14 @@ class Player(models.Model):
 
     def __str__(self):
         return self.user.username
+
+    def get_most_faced_move(self):
+        self.faced_moves = json.loads(self.faced_moves)
+        return max(self.faced_moves, key=self.faced_moves.get)
+
+    def get_most_played_move(self):
+        self.played_moves = json.loads(self.played_moves)
+        return max(self.played_moves, key=self.played_moves.get)
 
     class Meta:
         ordering = ['user__username']

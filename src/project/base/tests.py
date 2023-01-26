@@ -81,4 +81,3 @@ class RoomModelTests(TestCase):
 #     def test_login_user(self):
 #
 #     def test_logout_user(self):
-
